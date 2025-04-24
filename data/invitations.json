@@ -1,0 +1,15 @@
+[
+    {
+        "code": "5bb28aa9483d823cebbf",
+        "invitado_nombre": "aaa",
+        "anfitrion": {
+            "id": "user_anfitrion1_initial",
+            "name": "Juan Perez",
+            "lote": "60"
+        },
+        "fecha_creacion": 1745457385,
+        "fecha_expiracion": 1745457360,
+        "status": "pendiente",
+        "fecha_aprobacion": 0
+    }
+]

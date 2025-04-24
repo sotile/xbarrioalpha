@@ -1,0 +1,52 @@
+[
+    {
+      "id": "user_developer_initial",
+      "username": "developer",
+      "name": "Diego Sotile",
+      "lote": "63",
+      "phone": "541164920364",
+      "role": "developer",
+      "password": "$2y$10$b/dzbcei6UMgTGzkIjr7ku8iKNYjFWK1AHYp5nookDCq3Lgx06sZS",
+      "created_at": 1713926400
+    },
+    {
+      "id": "user_anfitrion1_initial",
+      "username": "anfitrion1",
+      "name": "Juan Perez",
+      "lote": "60",
+      "phone": "+5491112345678",
+      "role": "anfitrion",
+      "password": "$2y$10$b/dzbcei6UMgTGzkIjr7ku8iKNYjFWK1AHYp5nookDCq3Lgx06sZS",
+      "created_at": 1713926401
+    },
+    {
+      "id": "user_anfitrion2_initial",
+      "username": "anfitrion2",
+      "name": "Maria Garcia",
+      "lote": "15",
+      "phone": "+5491187654321",
+      "role": "anfitrion",
+      "password": "$2y$10$b/dzbcei6UMgTGzkIjr7ku8iKNYjFWK1AHYp5nookDCq3Lgx06sZS",
+      "created_at": 1713926402
+    },
+    {
+      "id": "user_seguridad1_initial",
+      "username": "seguridad1",
+      "name": "Seguridad 1",
+      "lote": null,
+      "phone": null,
+      "role": "seguridad",
+      "password": "$2y$10$rpUUXd658iUBJxiJ.YRS7uFQg/4R88F9fpe3Gl8jd56wupieJaS",
+      "created_at": 1713926403
+    },
+    {
+      "id": "user_seguridad2_initial",
+      "username": "seguridad2",
+      "name": "Seguridad 2",
+      "lote": null,
+      "phone": null,
+      "role": "seguridad",
+      "password": "$2y$10$hashed_password_for_seguridad2...",
+      "created_at": 1713926404
+    }
+  ]

@@ -1,0 +1,55 @@
+# D:\_aalocal\xsecalpha\.htaccess
+
+# Activa el motor de reescritura de URLs
+
+RewriteEngine On
+
+# Define la base de la URL para las reglas de reescritura.
+
+# >>> AJUSTA ESTA LÍNEA SEGÚN LA ESTRUCTURA DE TU SERVIDOR <<<
+
+# Si tu aplicación está en http://localhost/xsecalpha/, usa:
+
+# RewriteBase /xsecalpha/
+
+RewriteBase /
+
+# --- Añade ESTE BLOQUE ---
+
+# Si la solicitud NO es para un archivo existente ...
+
+RewriteCond %{REQUEST_FILENAME} !-f
+
+# ... Y si la solicitud NO es para un directorio existente ...
+
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# ... Entonces, aplica las reglas siguientes.
+
+# (Esta condición es otra forma común de escribir la regla; la anterior con [OR] y RewriteRule ^ - [L] también funciona)
+
+# --- Fin del bloque ---
+
+# Si tu aplicación está en http://localhost/ (y los archivos están directamente en la raíz web), usa:
+
+# RewriteBase /
+
+# Regla para reescribir URLs del formato /qr/CODIGO
+
+# ^qr/ : Coincide con la ruta que empieza por "qr/"
+
+# ([^/]+) : Captura uno o más caracteres que NO sean una barra inclinada (este es el CODIGO)
+
+# $ : Fin de la línea
+
+# showqr.php?code=$1 : La URL interna a la que se redirige. $1 inserta el código capturado.
+
+# [L] : Last rule (detiene el procesamiento de reglas si esta coincide)
+
+# [QSA] : Query String Append (añade cualquier parámetro GET existente, aunque no esperamos aquí)
+
+RewriteRule ^qr/([^/]+)$ showqr.php?code=$1 [L,QSA]
+
+# Opcional: Reglas para evitar el acceso directo a carpetas sensibles si no quieres que sean navegables
+
+# RewriteRule ^(includes|data|qr)/ - [F,L]

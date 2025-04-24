@@ -1,0 +1,20 @@
+[
+    {
+        "username": "test323",
+        "password": "$2y$10$BVjtOp.aJ2LPgPldo6AH3ukKJTTLbwL1IQU4KR8lF9yErpGWzZVai",
+        "role": "seguridad",
+        "name": "wsegg2s",
+        "lote": "232",
+        "phone": "",
+        "id": "user_6809ae68e3a1f0.71817139"
+    },
+    {
+        "username": "juan",
+        "password": "$2y$10$eb01k9JyxwTEl94UZdkipugpSFI7FdSR7v.D/.4WuvvcAbnP5.Dy6",
+        "role": "anfitrion",
+        "name": "juan a",
+        "lote": "21",
+        "phone": "",
+        "id": "user_6809aeb137cea0.69932337"
+    }
+]
