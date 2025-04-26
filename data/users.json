@@ -10,11 +10,32 @@
     },
     {
         "username": "juan",
-        "password": "$2y$10$eb01k9JyxwTEl94UZdkipugpSFI7FdSR7v.D/.4WuvvcAbnP5.Dy6",
+        "password": "$2y$10$eb01k9JyxwTEl94UZdkipugpSFI7FdSR7v.D\/.4WuvvcAbnP5.Dy6",
         "role": "anfitrion",
         "name": "juan a",
         "lote": "21",
         "phone": "",
         "id": "user_6809aeb137cea0.69932337"
+    },
+    
+    {
+        "username": "diego",
+        "password": "$2y$10$eb01k9JyxwTEl94UZdkipugpSFI7FdSR7v.D\/.4WuvvcAbnP5.Dy6",
+        "role": "anfitrion",
+        "name": "Diego Sotile",
+        "lote": "63",
+        "phone": "5491164920364",
+        "id": "dynamic_680bd72e0130e4.82230763",
+        "created_at": 1745606446
+    },
+    {
+        "username": "eugenia",
+        "password": "$2y$10$NudZH8IaklQkeFO.E9AUUenAZIjSEZUinoNjUMznat3SZZYCy7tHG",
+        "role": "anfitrion",
+        "name": "Eugenia",
+        "lote": "63",
+        "phone": "",
+        "id": "dynamic_680bd72e0130e4.82230765",
+        "created_at": 1745606446
     }
 ]

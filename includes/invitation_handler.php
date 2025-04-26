@@ -1,23 +1,40 @@
 <?php
 // htdocs/includes/invitation_handler.php
 
+// --- === Configurar Zona Horaria === ---
+// Establece la zona horaria a la de Buenos Aires, Argentina.
+// Esto es crucial para que las funciones de fecha y hora (como time() y strtotime())
+// operen con la hora local correcta del anfitrión/sistema.
+date_default_timezone_set('America/Argentina/Buenos_Aires');
+
+
 // --- === Includes (Asegúrate que estén al principio) === ---
-require_once __DIR__ . '/auth.php'; // Necesario para start_session_if_not_started y gets_current_user
-require_once __DIR__ . '/config.php'; // Necesario para URL_BASE, $invitations_file, $qr_codes_dir (si definidos allí), $delete_allowed_roles_global
-require_once __DIR__ . '/phpqrcode.php'; // Necesario para la generación de QR en createInvitation
+// Necesario para start_session_if_not_started, gets_current_user, etc.
+require_once __DIR__ . '/auth.php';
+// Necesario para URL_BASE, $invitations_file, $qr_codes_dir (si definidos allí), $delete_allowed_roles_global
+require_once __DIR__ . '/config.php';
+// Necesario para la generación de QR (asegúrate que esta librería esté en tu proyecto)
+// Si phpqrcode.php está en la carpeta 'includes', la ruta sería __DIR__ . '/phpqrcode.php'
+// Si está en la raíz de htdocs, sería __DIR__ . '/../phpqrcode.php'
+require_once __DIR__ . '/phpqrcode.php'; // <<< VERIFICA ESTA RUTA
 
 
 // --- Configuración (Variables globales) ---
 // Si estas variables están definidas en config.php, se usarán esos valores.
 // De lo contrario, se usan los valores por defecto definidos aquí.
-$invitations_file = $invitations_file ?? __DIR__ . '/../data/invitations.json';
+$invitations_file = $invitations_file ?? __DIR__ . '/../data/invitations.json'; // Ruta al archivo JSON de invitaciones
 $qr_codes_dir = $qr_codes_dir ?? __DIR__ . '/../qr/'; // Directorio para guardar las imágenes QR
 
-// Roles permitidos globalmente para eliminar invitaciones
+// Roles permitidos globalmente para eliminar invitaciones (además del propio anfitrión)
+// Es mejor definir esto en config.php y usar la global.
 $delete_allowed_roles_global = $delete_allowed_roles_global ?? ['administrador', 'developer'];
 
+// Roles permitidos para verificar invitaciones (usado en el endpoint verify)
+// Es mejor definir esto en config.php y usar la global.
+$verify_allowed_roles = $verify_allowed_roles ?? ['seguridad', 'administrador', 'developer'];
 
-// --- Funciones de Bajo Nivel para Manejo de Archivo JSON ---
+
+// --- Funciones de Bajo Nivel para Manejo de Archivo JSON de Invitaciones ---
 
 /**
  * Lee los datos de las invitaciones desde el archivo JSON.
@@ -47,7 +64,7 @@ function getInvitations(): array {
  */
 function saveInvitations(array $invitations): bool {
     global $invitations_file; // Usa la variable global con la ruta al archivo JSON
-    $json_content = json_encode($invitations, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    $json_content = json_encode($invitations, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); // Añadido UNICODE
     if ($json_content === false) {
         error_log("Error codificando invitaciones a JSON: " . json_last_error_msg());
         return false;
@@ -55,7 +72,7 @@ function saveInvitations(array $invitations): bool {
     $data_dir = dirname($invitations_file);
     if (!is_dir($data_dir)) {
         if (!mkdir($data_dir, 0775, true)) {
-            error_log("Error creando directorio de datos: " . $data_dir);
+            error_log("Error creando directorio de datos para invitaciones: " . $data_dir);
             return false;
         }
     }
@@ -71,13 +88,15 @@ function saveInvitations(array $invitations): bool {
 /**
  * Crea una nueva invitación, genera un código único, la guarda en JSON y genera la imagen QR.
  * @param string $guest_name El nombre del invitado.
- * @param array $host_user_data Array asociativo con los datos del usuario anfitrión (id, name, lote).
- * @param string $expiration_date_str String que representa la fecha y hora de expiración (ej. 'YYYY-MM-DD HH:MM:SS').
+ * @param array $host_user_data Array asociativo con los datos del usuario anfitrión (id, name, lote, etc.).
+ * @param string $expiration_date_str String que representa la fecha y hora de expiración (ej. 'YYYY-MM-DD HH:MM:SS' o 'YYYY-MM-DDTHH:MM').
  * @return array|null El array de la invitación recién creada en caso de éxito, null en caso de fallo.
  */
 function createInvitation(string $guest_name, array $host_user_data, string $expiration_date_str): ?array {
     global $invitations_file; // Ruta al archivo JSON
     global $qr_codes_dir; // Ruta al directorio de QRs
+    global $valid_app_roles; // Necesario si validas roles aquí (aunque la validación principal es en invitar.php)
+
     // Validaciones básicas de entrada
     if (empty($guest_name) || !isset($host_user_data['id'], $host_user_data['name'], $host_user_data['lote']) || empty($expiration_date_str)) {
         error_log("createInvitation fallo: Faltan datos requeridos.");
@@ -85,11 +104,27 @@ function createInvitation(string $guest_name, array $host_user_data, string $exp
     }
 
     // Generar un código único para la invitación
-    $unique_seed = uniqid('', true) . microtime(true) . $guest_name . $host_user_data['id'];
-    $invitation_code = substr(sha1($unique_seed), 0, 20); // Código de 20 caracteres
+    // Asegurarse de que el código sea único en el archivo JSON
+    $invitation_code = '';
+    $invitations = getInvitations(); // Cargar invitaciones existentes para verificar unicidad
+    do {
+        $unique_seed = uniqid('', true) . microtime(true) . $guest_name . $host_user_data['id'] . rand(1000, 9999);
+        $invitation_code = substr(sha1($unique_seed), 0, 20); // Código de 20 caracteres
+        // Verificar si el código ya existe en las invitaciones cargadas
+        $code_exists = false;
+        foreach ($invitations as $inv) {
+            if (isset($inv['code']) && $inv['code'] === $invitation_code) {
+                $code_exists = true;
+                error_log("DEBUG createInvitation: Código duplicado generado, reintentando...");
+                break;
+            }
+        }
+    } while ($code_exists); // Repetir si el código ya existe
+
 
     // Convertir fecha de expiración a timestamp
     $creation_timestamp = time();
+    // strtotime puede manejar 'YYYY-MM-DD HH:MM:SS' o 'YYYY-MM-DDTHH:MM'
     $expiration_timestamp = strtotime($expiration_date_str);
 
     if ($expiration_timestamp === false) {
@@ -101,15 +136,20 @@ function createInvitation(string $guest_name, array $host_user_data, string $exp
     $new_invitation = [
         'code' => $invitation_code,
         'invitado_nombre' => $guest_name,
-        'anfitrion' => $host_user_data, // Guardamos los datos del anfitrión
+        'anfitrion' => [ // Guardamos solo datos relevantes del anfitrión para la invitación
+             'id' => $host_user_data['id'],
+             'username' => $host_user_data['username'] ?? 'N/A',
+             'name' => $host_user_data['name'],
+             'lote' => $host_user_data['lote'],
+             // No guardar la contraseña del anfitrión aquí!
+        ],
         'fecha_creacion' => $creation_timestamp,
         'fecha_expiracion' => $expiration_timestamp,
         'status' => 'pendiente', // Estado inicial
         'fecha_aprobacion' => 0, // Timestamp de aprobación (0 si no ha sido aprobada)
     ];
 
-    // Cargar invitaciones existentes, añadir la nueva y guardar
-    $invitations = getInvitations();
+    // Añadir la nueva invitación al array cargado
     $invitations[] = $new_invitation;
 
     if (!saveInvitations($invitations)) {
@@ -117,30 +157,37 @@ function createInvitation(string $guest_name, array $host_user_data, string $exp
         return null;
     }
 
-    // --- === Generar Código QR === ---
-    // El contenido del QR ahora será SOLAMENTE el código de invitación
-    $qr_content = $invitation_code; // <-- ¡CORRECCIÓN CLAVE AQUÍ!
+    // --- === Generar Código QR (Archivo PNG) === ---
+    // El contenido del QR en el archivo PNG guardado será SOLAMENTE el código de invitación.
+    // Esto es para referencia o si se necesita un QR simple sin URL.
+    $qr_content_png = $invitation_code;
 
-    $qr_filepath = $qr_codes_dir . $invitation_code . '.png'; // Ruta donde se guardará la imagen QR
+    // Usamos urlencode() para el nombre del archivo por si el código tuviera caracteres especiales,
+    // aunque sha1 + substr debería evitar la mayoría.
+    $qr_filepath = $qr_codes_dir . urlencode($invitation_code) . '.png';
 
     // Asegurarse de que el directorio de QRs exista
     if (!is_dir($qr_codes_dir)) {
         if (!mkdir($qr_codes_dir, 0775, true)) {
             error_log("createInvitation fallo: Error creando directorio de QRs: " . $qr_codes_dir);
-             // Decidir si fallar aquí o continuar sin generar QR. Si el QR es obligatorio, retorna null.
-             return $new_invitation; // Opcional: continuar si el QR no es estrictamente necesario
+             // No fallar la creación de la invitación si falla la generación del QR PNG,
+             // pero loguear el error. La invitación ya está guardada en el JSON.
+             return $new_invitation; // Retorna la invitación creada aunque el QR PNG no se generó
         }
          error_log("DEBUG: Directorio de QRs creado: " . $qr_codes_dir);
     }
 
-    // Generar la imagen QR
+    // Generar la imagen QR usando la librería phpqrcode
     try {
-        \QRcode::png($qr_content, $qr_filepath, 'H', 10, 2, false);
-        error_log("DEBUG: QR code guardado exitosamente en: " . $qr_filepath);
+        // El tercer parámetro es el nivel de corrección de error ('L', 'M', 'Q', 'H')
+        // El cuarto parámetro es el tamaño del punto en píxeles (ej: 10)
+        // El quinto parámetro es el margen alrededor del QR (ej: 2)
+        // El sexto parámetro es si se guarda como archivo (true) o se muestra directamente (false)
+        \QRcode::png($qr_content_png, $qr_filepath, 'H', 10, 2, false); // <-- Genera el archivo PNG
+        error_log("DEBUG: QR code PNG guardado exitosamente en: " . $qr_filepath);
     } catch (\Exception $e) {
-        error_log("createInvitation fallo: Error generando o guardando código QR para código " . $invitation_code . ": " . $e->getMessage());
-         // Decidir si fallar aquí o continuar sin generar QR.
-         return $new_invitation; // Opcional: continuar si el QR no es estrictamente necesario
+        error_log("createInvitation fallo: Error generando o guardando código QR PNG para código " . $invitation_code . ": " . $e->getMessage());
+         // No fallar la creación de la invitación si falla la generación del QR PNG
     }
 
     return $new_invitation; // Retorna los datos de la invitación recién creada
@@ -177,7 +224,8 @@ function updateInvitation(string $code, array $updated_data): ?array {
     foreach ($invitations as $key => $invitation) {
         if (isset($invitation['code']) && is_string($invitation['code']) && $invitation['code'] === $code) {
             $found_key = $key;
-            $updated_invitation = array_merge($invitation, $updated_data);
+            // Usar array_replace para sobrescribir completamente las claves existentes
+            $updated_invitation = array_replace($invitation, $updated_data);
             $invitations[$found_key] = $updated_invitation;
             break;
         }
@@ -200,6 +248,7 @@ function approveInvitationByCode(string $code): ?array {
     // Solo aprobar si existe y está pendiente
     if ($invitation && isset($invitation['status']) && $invitation['status'] === 'pendiente') {
         $updated_data = ['status' => 'aprobado', 'fecha_aprobacion' => time()];
+    
         return updateInvitation($code, $updated_data);
     }
     return null; // No se encontró o no estaba pendiente
@@ -234,7 +283,8 @@ function getInvitationsByHostId($host_user_id): array {
 
 /**
  * Elimina una invitación del archivo JSON por su código único.
- * NO elimina el archivo QR asociado automáticamente.
+ * NO elimina el archivo QR asociado automáticamente (la lógica de eliminación del archivo QR
+ * debe estar donde se llama a esta función, ej: en el endpoint de eliminación).
  * @param string $code El código único de la invitación a eliminar.
  * @return bool True si se eliminó correctamente, false si no se encontró o falló al guardar.
  */
@@ -250,12 +300,15 @@ function deleteInvitationByCode(string $code): bool {
 
     // Filtrar el array para excluir la invitación con el código dado
     $updated_invitations = array_filter($invitations, function($inv) use ($code, &$invitation_found) {
-        if (isset($inv['code']) && $inv['code'] === $code) {
+        if (isset($inv['code']) && is_string($inv['code']) && $inv['code'] === $code) {
             $invitation_found = true;
             return false; // Excluir este elemento
         }
         return true; // Incluir este elemento
     });
+
+    // Reindexar el array después de filtrar para evitar claves numéricas salteadas
+    $updated_invitations = array_values($updated_invitations);
 
     // Si no se encontró la invitación, retornar false
     if (!$invitation_found) {
@@ -278,11 +331,11 @@ function deleteInvitationByCode(string $code): bool {
 }
 
 
-// --- === Bloque para Manejar Solicitudes POST (Ej: Solicitudes AJAX) === ---
+// --- === Bloque para Manejar Solicitudes POST (Endpoints AJAX) === ---
 // Este bloque se ejecuta SOLAMENTE cuando este script (invitation_handler.php)
 // recibe directamente una petición por método POST.
-// Está diseñado para actuar como un endpoint para peticiones del lado del cliente.
-if (basename(__FILE__) === 'invitation_handler.php' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+// La condición `$_SERVER['SCRIPT_FILENAME'] === __FILE__` es más robusta que basename(__FILE__).
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_SERVER['SCRIPT_FILENAME'] === __FILE__) {
     // Establecer encabezados para indicar que la respuesta será JSON.
     header('Content-Type: application/json');
 
@@ -312,7 +365,6 @@ if (basename(__FILE__) === 'invitation_handler.php' && $_SERVER['REQUEST_METHOD'
 
             // Roles que tienen permiso global para eliminar (Admin, Developer)
             global $delete_allowed_roles_global; // Acceder a la global
-            $delete_allowed_roles_global = $delete_allowed_roles_global ?? ['administrador', 'developer'];
 
             // 1. Verificar si el rol del usuario actual tiene permiso global para eliminar
             if (is_logged_in() && in_array($user_role, $delete_allowed_roles_global)) {
@@ -348,7 +400,8 @@ if (basename(__FILE__) === 'invitation_handler.php' && $_SERVER['REQUEST_METHOD'
                 if ($delete_success) {
                     // Si la eliminación del JSON fue exitosa, también intentamos eliminar el archivo QR.
                     global $qr_codes_dir; // Accede a la variable global
-                    $qr_filepath = $qr_codes_dir . urlencode($code) . '.png'; // Construye la ruta del archivo QR
+                    // Usamos urlencode() aquí también por consistencia con cómo se guarda el archivo
+                    $qr_filepath = $qr_codes_dir . urlencode($code) . '.png';
 
                     if (file_exists($qr_filepath)) {
                         if (unlink($qr_filepath)) {
@@ -365,7 +418,7 @@ if (basename(__FILE__) === 'invitation_handler.php' && $_SERVER['REQUEST_METHOD'
 
                 } else {
                     // Si falló deleteInvitationByCode
-                     if (!isset($response['message']) || ($response['message'] === 'Acción no reconocida.')) {
+                     if (!isset($response['message']) || ($response['message'] === 'Acción no reconocida.')) { // Evitar sobreescribir mensajes de permiso
                          $response['message'] = 'Error interno al procesar la eliminación de la invitación.';
                      }
                 }
@@ -383,8 +436,7 @@ if (basename(__FILE__) === 'invitation_handler.php' && $_SERVER['REQUEST_METHOD'
         } else {
             // --- === Verificación de Permisos para Verificar === ---
             // Define qué roles pueden usar el escáner para verificar.
-            // Puedes definir $verify_allowed_roles en config.php si prefieres.
-            $verify_allowed_roles = $verify_allowed_roles ?? ['seguridad', 'administrador', 'developer'];
+            global $verify_allowed_roles; // Accede a la global
 
             // Verifica si el usuario logueado tiene permiso para verificar.
             if (!is_logged_in() || !in_array($user_role, $verify_allowed_roles)) {
@@ -393,11 +445,31 @@ if (basename(__FILE__) === 'invitation_handler.php' && $_SERVER['REQUEST_METHOD'
                 // --- === Lógica de Verificación de Invitación === ---
                 $invitation = getInvitationByCode($code); // Obtiene la invitación por código
 
+                // --- Preparar array para información de depuración de expiración ---
+                $debug_expiration_info = [
+                    'current_time_ts' => time(),
+                    'current_time_formatted' => date('Y-m-d H:i:s', time()),
+                    'invitation_found' => ($invitation !== null),
+                    'expiration_timestamp_ts' => null,
+                    'expiration_timestamp_formatted' => 'N/A',
+                    'is_expired_check' => 'N/A' // Resultado de la comparación
+                ];
+
+
                 if ($invitation) {
                     // Invitación encontrada, ahora verificar estado y expiración.
-                    $current_time = time();
-                    $is_expired = isset($invitation['fecha_expiracion']) && $invitation['fecha_expiracion'] > 0 && $invitation['fecha_expiracion'] < $current_time;
+                    $current_time = time(); // Timestamp actual
+                    $expiration_timestamp = $invitation['fecha_expiracion'] ?? 0; // Timestamp de expiración
                     $status = $invitation['status'] ?? 'desconocido';
+
+                    // Llenar información de depuración
+                    $debug_expiration_info['expiration_timestamp_ts'] = $expiration_timestamp;
+                    $debug_expiration_info['expiration_timestamp_formatted'] = ($expiration_timestamp > 0 ? date('Y-m-d H:i:s', $expiration_timestamp) : 'N/A');
+                    $debug_expiration_info['is_expired_check'] = ($expiration_timestamp > 0 && $expiration_timestamp < $current_time) ? 'VERDADERO' : 'FALSO';
+
+
+                    $is_expired = $expiration_timestamp > 0 && $expiration_timestamp < $current_time;
+
 
                     // Prepara los datos de la invitación para la respuesta
                     $invitation_details = [
@@ -461,15 +533,96 @@ if (basename(__FILE__) === 'invitation_handler.php' && $_SERVER['REQUEST_METHOD'
                         'status' => 'no_encontrado',
                         'details' => null
                     ];
+                     // Llenar información de depuración (ya marcada como no encontrada)
+                     $debug_expiration_info['invitation_found'] = false;
                 }
+
+                // --- === Añadir información de depuración a la respuesta === ---
+                // Solo añadir si estamos en un entorno de desarrollo o si el usuario tiene un rol de depuración
+                // Puedes añadir una condición aquí basada en $_SERVER['REMOTE_ADDR'] o el rol del usuario
+                // Por ahora, la añadimos siempre para depurar el problema.
+                 $response['debug_expiration'] = $debug_expiration_info;
+
+
             } // else for permission check
 
         } // else for empty($code)
     } // Fin del if ($action === 'verify')
 
 
+    // --- === Manejar la Acción de Aprobar (si se implementa via AJAX) === ---
+    if ($action === 'approve') {
+        // Validar que se haya proporcionado un código.
+        if (empty($code)) {
+            $response['message'] = 'Error: Código de invitación no proporcionado para aprobar.';
+        } else {
+            // --- === Verificación de Permisos para Aprobar === ---
+            // Define qué roles pueden aprobar invitaciones.
+            // Puedes definir $approve_allowed_roles en config.php si prefieres.
+            $approve_allowed_roles = $approve_allowed_roles ?? ['seguridad', 'administrador', 'developer'];
+
+            // Verifica si el usuario logueado tiene permiso para aprobar.
+            if (!is_logged_in() || !in_array($user_role, $approve_allowed_roles)) {
+                 $response['message'] = 'Error: No tienes permiso para aprobar invitaciones.';
+            } else {
+                 // --- === Lógica de Aprobación de Invitación === ---
+                 $updated_invitation = approveInvitationByCode($code); // Intenta aprobar
+
+                 if ($updated_invitation) {
+                      // Si se aprobó correctamente, preparar la respuesta de éxito
+                      $response = [
+                           'success' => true,
+                           'message' => 'Invitación aprobada con éxito.',
+                           'status' => 'aprobado', // Estado actualizado
+                           'details' => [ // Incluir detalles actualizados
+                               'code' => $updated_invitation['code'] ?? 'N/A',
+                               'invitado_nombre' => $updated_invitation['invitado_nombre'] ?? 'N/A',
+                               'anfitrion_name' => $updated_invitation['anfitrion']['name'] ?? 'N/A',
+                               'anfitrion_lote' => $updated_invitation['anfitrion']['lote'] ?? 'N/A',
+                               'fecha_creacion' => isset($updated_invitation['fecha_creacion']) ? date('d/m/Y H:i', $updated_invitation['fecha_creacion']) : 'N/A',
+                               'fecha_expiracion' => isset($updated_invitation['fecha_expiracion']) && $updated_invitation['fecha_expiracion'] > 0 ? date('d/m/Y H:i', $updated_invitation['fecha_expiracion']) : 'Nunca',
+                               'status' => $updated_invitation['status'] ?? 'desconocido',
+                               'fecha_aprobacion' => isset($updated_invitation['fecha_aprobacion']) && $updated_invitation['fecha_aprobacion'] > 0 ? date('d/m/Y H:i', $updated_invitation['fecha_aprobacion']) : 'Pendiente',
+                           ]
+                      ];
+                     // 
+                     $updatemsg = 'Ingreso Aprobado: ' . $updated_invitation['invitado_nombre'] . ' Lote: ' . $updated_invitation['anfitrion']['lote'];
+                    // sendws($updated_invitation['anfitrion']['phone'],  $updatemsg);
+                     // Enviar notificación por Telegram de produccion.
+                      sendTel($updatemsg, $GLOBALS['protelid']);
+                 } else {
+                      // Si no se pudo aprobar (no encontrada, no pendiente, error interno)
+                      // Intentar obtener la invitación de nuevo para dar un mensaje más específico si existe pero no pendiente
+                      $invitation_check = getInvitationByCode($code);
+                      if ($invitation_check) {
+                           $status_check = $invitation_check['status'] ?? 'desconocido';
+                           $response['message'] = "No se pudo aprobar la invitación. Estado actual: " . $status_check;
+                           $response['status'] = $status_check;
+                           // Incluir detalles para que la UI pueda mostrar el estado actual
+                           $response['details'] = [
+                               'code' => $invitation_check['code'] ?? 'N/A',
+                               'invitado_nombre' => $invitation_check['invitado_nombre'] ?? 'N/A',
+                               'anfitrion_name' => $invitation_check['anfitrion']['name'] ?? 'N/A',
+                               'anfitrion_lote' => $invitation_check['anfitrion']['lote'] ?? 'N/A',
+                               'fecha_creacion' => isset($invitation_check['fecha_creacion']) ? date('d/m/Y H:i', $invitation_check['fecha_creacion']) : 'N/A',
+                               'fecha_expiracion' => isset($invitation_check['fecha_expiracion']) && $invitation_check['fecha_expiracion'] > 0 ? date('d/m/Y H:i', $invitation_check['fecha_expiracion']) : 'Nunca',
+                               'status' => $status_check,
+                               'fecha_aprobacion' => isset($invitation_check['fecha_aprobacion']) && $invitation_check['fecha_aprobacion'] > 0 ? date('d/m/Y H:i', $invitation_check['fecha_aprobacion']) : 'Pendiente',
+                           ];
+
+                      } else {
+                           $response['message'] = 'Error al aprobar: Invitación no encontrada.';
+                           $response['status'] = 'no_encontrado';
+                           $response['details'] = null;
+                      }
+                 }
+            } // else for permission check
+        } // else for empty($code)
+    } // Fin del if ($action === 'approve')
+
+
     // --- === Enviar la Respuesta JSON y Salir === ---
-    // Si el action no fue 'delete' ni 'verify', la respuesta sigue siendo la inicial 'Acción no reconocida.'
+    // Si el action no fue 'delete', 'verify' ni 'approve', la respuesta sigue siendo la inicial 'Acción no reconocida.'
     echo json_encode($response);
     exit; // Termina la ejecución del script.
 }

@@ -1,0 +1,183 @@
+/* htdocs/css/scanqr_styles.css - Estilos específicos para scanqr.php */
+
+/* Estilos para el contenedor principal del escáner */
+/* Aunque .container existe en styles.css, .scan-container es específico de esta página */
+.scan-container {
+    max-width: 500px;
+    width: 100%;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    position: relative;
+    box-sizing: border-box;
+}
+
+/* Ajustes para el contenedor del video */
+/* #scanner-container existe en styles.css, pero #video-container es específico de la implementación ZXing */
+#video-container {
+    width: 100%;
+    max-width: 400px; /* Limita el ancho máximo del contenedor */
+    margin: 0 auto 20px auto;
+    position: relative; /* Necesario para posicionar el video dentro */
+    overflow: hidden;
+    border-radius: 4px;
+    border: 1px solid #007bff;
+    box-sizing: border-box;
+    /* Establecer ancho y alto explícitamente para controlar el tamaño del área del video */
+    width: 300px; /* Ancho deseado para el cuadrado */
+    height: 300px; /* Altura deseada para el cuadrado */
+    display: block; /* Asegura que esté visible al inicio */
+}
+
+/* Ajustes para el elemento de video */
+/* Aunque #scanner existe en styles.css, estas propiedades son específicas de cómo se posiciona y ajusta en #video-container */
+#scanner {
+    display: block;
+    position: absolute; /* Posicionamiento absoluto dentro de video-container */
+    top: 0;
+    left: 0;
+    width: 100%; /* Ocupa todo el ancho del contenedor */
+    height: 100%; /* Ocupa toda la altura del contenedor */
+    object-fit: cover; /* Cubre el área manteniendo la proporción */
+    /* transform: scaleX(-1); /* Opcional: reflejar el video si es la cámara frontal */
+    z-index: 1;
+    background-color: #eee;
+}
+
+/* Estilos para el área de resultado del escaneo */
+/* Similar a .status-message en styles.css, pero #scan-result es el ID específico */
+#scan-result {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 4px;
+    min-height: 50px; /* Altura mínima para mostrar mensajes */
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Estilos para la visualización de detalles de la invitación después del escaneo */
+/* Similar a .invitation-details/.invitation-details-expanded en styles.css, pero esta clase es específica de scanqr.php */
+.invitation-details-display {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+    text-align: left; /* Detalles alineados a la izquierda */
+    width: 100%;
+    box-sizing: border-box;
+    display: none; /* Inicialmente oculto */
+}
+
+.invitation-details-display .detail-item {
+    margin: 5px 0;
+}
+
+.invitation-details-display .detail-label {
+    font-weight: bold;
+    display: inline-block;
+    width: 120px; /* Ajusta para alinear etiquetas */
+    margin-right: 10px;
+    text-align: right;
+}
+
+.invitation-details-display .detail-value {
+    display: inline-block;
+    word-break: break-all; /* Permite que palabras largas se rompan si no caben */
+}
+
+/* Estilos para el contenedor de botones de acción (Aprobar, etc.) */
+/* Similar a .scan-actions/.button-group-expanded en styles.css, pero este es específico de scanqr.php */
+.scan-actions {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: center; /* Centra los botones */
+    gap: 10px; /* Espacio entre botones */
+    flex-wrap: wrap; /* Permite que los botones salten de línea */
+    width: 100%;
+    box-sizing: border-box;
+    display: none; /* Inicialmente oculto */
+}
+
+.scan-actions .btn {
+    margin: 0; /* Anula márgenes si el contenedor flex usa gap */
+}
+
+/* Estilos específicos para el botón Aprobar Invitación */
+/* Similar a #approve-btn en styles.css, pero #approve-scan-btn es el ID específico */
+#approve-scan-btn {
+    background-color: #28a745; /* Verde */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 10px 20px;
+    font-size: 16px;
+}
+
+#approve-scan-btn:hover {
+    background-color: #218838;
+}
+
+#approve-scan-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* Estilos para el botón Escanear de Nuevo */
+/* Este botón es específico de scanqr.php */
+#scan-again-btn {
+    background-color: #007bff; /* Azul */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 10px 20px;
+    font-size: 16px;
+    margin-top: 15px; /* Espacio arriba */
+    display: none; /* Inicialmente oculto */
+}
+
+#scan-again-btn:hover {
+    background-color: #0056b3; /* Azul más oscuro */
+}
+
+
+/* Estilos para mensajes de error de escaneo */
+/* Este elemento es específico de scanqr.php */
+#scan-error {
+    margin-top: 10px;
+    color: red;
+    font-weight: bold;
+    min-height: 1.2em;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Estilos para la información de depuración de expiración */
+/* Este elemento es específico de scanqr.php */
+#expiration-debug-info {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px dashed #007bff;
+    border-radius: 4px;
+    background-color: #e9ecef;
+    text-align: left;
+    font-size: 0.9em;
+    color: #333;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: pre-wrap;
+    display: none;
+}
+
+#expiration-debug-info strong {
+    color: #0056b3;
+}
+
+/* Las clases de fondo de estado (status-valid-bg, etc.) ya están en styles.css y no se repiten aquí. */
+

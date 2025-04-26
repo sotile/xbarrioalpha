@@ -1,6 +1,9 @@
 <?php
 // htdocs/listqr.php - Página para listar las invitaciones creadas
 
+// --- === Configurar Zona Horaria === ---
+date_default_timezone_set('America/Argentina/Buenos_Aires'); // Asegúrate de que la zona horaria sea correcta
+
 // --- === Includes y Autenticación === ---
 // Asegúrate que estos archivos existan en la carpeta 'includes'.
 require_once __DIR__ . '/includes/auth.php'; // Contiene funciones de autenticación y usuario.
@@ -15,20 +18,22 @@ $current_user = gets_current_user();
 
 // Extrae el rol del usuario logueado.
 $user_role = $current_user['role'] ?? 'guest';
+// También necesitamos el ID y el lote del usuario logueado para la lógica de filtrado y permisos.
+$user_id = $current_user['id'] ?? null;
+$user_lote = $current_user['lote'] ?? null;
 
-// --- === Inicialización de variables de roles permitidos con valores por defecto === ---
-// Estas variables controlan qué enlaces de navegación se muestran en el encabezado.
-// Si config.php define variables globales con estos nombres, esas definiciones las sobrescribirán.
-// Inicializarlas aquí garantiza que siempre existan como arrays.
 
 // Roles permitidos para ver este listado (usado para la autorización de la página misma y enlaces en otros scripts).
-// Obtiene el valor de $allowed_roles de config.php si existe, de lo contrario usa el array por defecto.
-$list_allowed_roles = $allowed_roles ?? ['anfitrion', 'seguridad', 'administrador', 'developer'];
+// Obtiene el valor de $list_allowed_roles de config.php si existe, de lo contrario usa el array por defecto.
+global $list_allowed_roles; // Acceder a la variable global si está definida en config.php
+$list_allowed_roles = $list_allowed_roles ?? ['anfitrion', 'seguridad', 'administrador', 'developer'];
 
 // Roles permitidos para crear invitaciones (usado para mostrar el enlace "Crear Invitación").
+global $invite_allowed_roles; // Acceder a la variable global si está definida en config.php
 $invite_allowed_roles = $invite_allowed_roles ?? ['anfitrion', 'administrador', 'developer'];
 
 // Roles permitidos para escanear QRs (usado para mostrar el enlace "Escanear QR").
+global $scan_allowed_roles; // Acceder a la variable global si está definida en config.php
 $scan_allowed_roles = $scan_allowed_roles ?? ['seguridad', 'administrador', 'developer'];
 
 
@@ -36,30 +41,40 @@ $scan_allowed_roles = $scan_allowed_roles ?? ['seguridad', 'administrador', 'dev
 // Verifica si el usuario NO está logueado O si su rol NO está en la lista de roles permitidos para ver el listado.
 if (!is_logged_in() || !in_array($user_role, $list_allowed_roles)) {
     // Si no tiene permiso, redirige a otra página.
-    redirect('index.php'); // Asegúrate que la ruta sea correcta.
+    // Asegúrate que la ruta 'index.php' sea correcta.
+    redirect('index.php');
+    exit(); // Importante: Termina el script después de redirigir.
 }
 
 
-// --- === Obtener las Invitaciones === ---
-// Obtiene todas las invitaciones del archivo JSON usando la función del handler.
-$all_invitations = getInvitations();
+$all_invitations = getInvitations(); // Asumo que getInvitations() sin parámetros trae todas.
 
-// --- Lógica de Filtrado y Ordenamiento (Opcional) ---
-// Puedes añadir aquí lógica para filtrar $all_invitations
-// basada en parámetros GET (ej: ?status=pendiente) o POST.
-// También puedes añadir lógica para ordenar las invitaciones.
-// Por ahora, simplemente usaremos todas las invitaciones.
-$filtered_invitations = $all_invitations; // En un caso real, esta variable se llenaría después de filtrar.
+// --- Lógica de Filtrado por Rol del Usuario ---
+$filtered_invitations = []; // Inicializa el array filtrado
 
-// --- Si quieres filtrar por anfitrión logueado (solo mostrar las suyas) ---
-// if (!in_array($user_role, ['administrador', 'developer'])) { // Si no es admin/dev
-//     $filtered_invitations = array_filter($all_invitations, function($inv) use ($current_user) {
-//         return isset($inv['anfitrion']['id']) && $inv['anfitrion']['id'] === ($current_user['id'] ?? null);
-//     });
-// }
-// Esto requiere que $current_user['id'] exista y sea consistente.
+if ($user_role === 'anfitrion') {
+    // Si el usuario es un anfitrión, filtrar para mostrar solo las invitaciones cuyo lote coincida con el suyo.
+    if ($user_lote !== null) {
+        $filtered_invitations = array_filter($all_invitations, function($inv) use ($user_lote) {
+            // Verifica si la invitación tiene datos de anfitrión y si el lote coincide.
+            return isset($inv['anfitrion']['lote']) && $inv['anfitrion']['lote'] === $user_lote;
+        });
+    } else {
+        // Si el anfitrión logueado no tiene lote definido, no mostrar ninguna invitación.
+        // $filtered_invitations ya es [], no necesita hacer nada más.
+        error_log("DEBUG_LISTQR: Anfitrión logueado sin lote definido (\$current_user['lote'] es null). Mostrando lista vacía.");
+    }
+} else {
+    // Si el usuario no es un anfitrión (seguridad, administrador, developer, etc.),
+    // mostrar todas las invitaciones obtenidas.
+    $filtered_invitations = $all_invitations;
+}
+// --- Fin Lógica de Filtrado por Rol ---
 
-// --- Fin Lógica de Filtrado ---
+
+// --- Variables para mostrar en el footer ---
+$display_username = htmlspecialchars($current_user['username'] ?? 'Invitado');
+$display_user_role = htmlspecialchars($user_role);
 
 
 ?>
@@ -70,35 +85,149 @@ $filtered_invitations = $all_invitations; // En un caso real, esta variable se l
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invitaciones</title>
     <link rel="stylesheet" href="css/styles.css">
-    <!-- Si app.js contiene lógica necesaria para esta página (ej: validación, etc.), inclúyelo. -->
-    <!-- <script src="js/app.js"></script> -->
+    <style>
+        /* Estilos para el estado de la invitación */
+        .status-pendiente { color: orange; font-weight: bold; }
+        .status-aprobado { color: green; font-weight: bold; }
+        .status-expirado { color: gray; font-weight: bold; }
+        .status-cancelado { color: red; font-weight: bold; }
+        .status-desconocido { color: purple; font-weight: bold; } /* Estado por defecto */
+
+        /* Estilos para las filas de detalles expandidos */
+        .invitation-details-row td {
+            padding: 10px;
+            background-color: #f9f9f9; /* Fondo ligeramente diferente para la fila de detalles */
+            border-bottom: 1px solid #ddd;
+        }
+        .invitation-details-expanded {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee; /* Separador visual */
+        }
+        .detail-item {
+            margin-bottom: 8px; /* Espacio entre cada item de detalle */
+        }
+        .detail-label {
+            font-weight: bold;
+            display: inline-block; /* Permite controlar el ancho */
+            width: 120px; /* Ancho fijo para alinear las etiquetas (ajusta según necesidad) */
+            margin-right: 10px;
+            text-align: right; /* Alinea el texto de la etiqueta a la derecha */
+        }
+        .detail-value {
+            display: inline-block; /* Permite que el valor siga a la etiqueta */
+            word-break: break-all; /* Evita que códigos largos desborden el contenedor */
+        }
+
+        /* Estilos para el grupo de botones expandido */
+        .button-group-expanded {
+             margin-top: 15px;
+             padding-top: 10px;
+             border-top: 1px solid #eee;
+             text-align: center; /* Centra los botones */
+             display: flex; /* Usar flexbox para alinear botones */
+             justify-content: center; /* Centra los botones horizontalmente */
+             gap: 10px; /* Espacio entre botones */
+             flex-wrap: wrap; /* Permite que los botones se envuelvan en pantallas pequeñas */
+        }
+         /* Estilo base para los botones (usando .btn de styles.css si existe) */
+         .button-group-expanded .btn {
+             margin: 0; /* Anula márgenes si el contenedor flex usa gap */
+         }
+
+         /* Estilo específico para el botón Copiar */
+         .copy-link-btn {
+             background-color: #17a2b8; /* Info color */
+             border-color: #17a2b8;
+             color: white;
+         }
+         .copy-link-btn:hover {
+             background-color: #138496;
+             border-color: #117a8b;
+         }
+
+          /* Estilo específico para el botón Eliminar */
+          .delete-invite-btn {
+              background-color: #dc3545; /* Danger color */
+              border-color: #dc3545;
+              color: white;
+          }
+          .delete-invite-btn:hover {
+              background-color: #c82333;
+              border-color: #bd2130;
+          }
+
+          /* Estilo específico para el botón Cancelar */
+          .cancel-invite-btn {
+              background-color: #ffc107; /* Warning color */
+              border-color: #ffc107;
+              color: #212529; /* Texto oscuro */
+          }
+          .cancel-invite-btn:hover {
+              background-color: #e0a800;
+              border-color: #d39e00;
+          }
+
+           /* Estilo específico para el botón Reactivar */
+           .reactivate-invite-btn {
+               background-color: #28a745; /* Success color */
+               border-color: #28a745;
+               color: white;
+           }
+           .reactivate-invite-btn:hover {
+               background-color: #218838;
+               border-color: #1e7e34;
+           }
+
+
+        /* Estilos para la modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); /* Fondo oscuro semi-transparente */
+            display: flex; /* Usar flexbox para centrar el contenido */
+            justify-content: center; /* Centrar horizontalmente */
+            align-items: center; /* Centrar verticalmente */
+            z-index: 1000; /* Asegura que esté por encima de otros elementos */
+            /* display: none; /* Inicialmente oculto, se muestra con JavaScript */
+        }
+
+        .modal-content {
+            background-color: #fff; /* Fondo blanco para el contenido */
+            padding: 20px; /* Espacio interno */
+            border-radius: 8px; /* Bordes redondeados */
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3); /* Sombra */
+            max-width: 90%; /* Ancho máximo del contenido */
+            max-height: 90%; /* Altura máxima del contenido */
+            overflow: auto; /* Añade scroll si el contenido es más grande que el modal */
+            text-align: center; /* Centra el contenido como la imagen QR */
+        }
+
+        .modal-content img {
+            max-width: 100%; /* Asegura que la imagen no se desborde del contenedor */
+            height: auto; /* Mantiene la proporción */
+            display: block; /* Elimina espacio extra debajo de la imagen */
+            margin: 0 auto; /* Centra la imagen dentro del modal-content */
+            cursor: pointer; /* Cambia el cursor para indicar que es clickeable */
+        }
+
+    </style>
 </head>
 <body>
     <div class="header">
         <h2>Invitaciones</h2>
         <a href="logout.php" class="logout-btn">Salir</a>
         <a href="index.php" class="back-btn">Home</a>
-        <?php // Enlace para ir a Crear Invitación (solo si el rol del usuario lo permite)
-              if (in_array($user_role, $invite_allowed_roles)):
-        ?>
-        <?php endif; ?>
-        <?php // Enlace para ir a Escanear QR (solo si el rol del usuario lo permite)
-              if (in_array($user_role, $scan_allowed_roles)):
-        ?>
-              <a href="scanqr.php" class="scan-qr-btn">Escanear QR</a>
-        <?php endif; ?>
     </div>
 
     <div class="container">
-  
-
-        <!-- Formulario de Filtrado/Ordenamiento (Opcional, implementa según necesidad) -->
-        <!-- <form method="GET" action="listqr.php"> ... </form> -->
-
+        <h3>Invitaciones</h3>
         <?php if (empty($filtered_invitations)): ?>
             <p>No hay invitaciones para mostrar con los criterios actuales.</p>
         <?php else: ?>
-            <!-- === === Tabla de Invitaciones === === -->
             <table>
             <thead>
                     <tr>
@@ -109,389 +238,486 @@ $filtered_invitations = $all_invitations; // En un caso real, esta variable se l
                 </thead>
                 <tbody>
                     <?php
-                    // Recorre cada invitación en el array filtrado/ordenado
+                    // Recorre cada invitación en el array filtrado
                     foreach ($filtered_invitations as $invitation):
-                        // Extrae y prepara todos los datos de la invitación como lo hacías antes
+                        // Extrae y prepara todos los datos de la invitación
                         $code = $invitation['code'] ?? 'N/A';
                         $guest_name = $invitation['invitado_nombre'] ?? 'N/A';
                         $anfitrion_name = $invitation['anfitrion']['name'] ?? 'N/A';
                         $anfitrion_lote = $invitation['anfitrion']['lote'] ?? 'N/A';
                         // Formatea timestamps a fechas legibles.
-                        $fecha_creacion = isset($invitation['fecha_creacion']) ? date('d/m/Y H:i', $invitation['fecha_creacion']) : 'N/A';
-                        $fecha_expiracion = isset($invitation['fecha_expiracion']) ? date('d/m/Y H:i', $invitation['fecha_expiracion']) : 'N/A';
+                        $fecha_creacion = isset($invitation['fecha_creacion']) && $invitation['fecha_creacion'] > 0 ? date('d/m/Y H:i', $invitation['fecha_creacion']) : 'N/A';
+                        $fecha_expiracion = isset($invitation['fecha_expiracion']) && $invitation['fecha_expiracion'] > 0 ? date('d/m/Y H:i', $invitation['fecha_expiracion']) : 'N/A';
                         $status = $invitation['status'] ?? 'desconocido';
                         $fecha_aprobacion = isset($invitation['fecha_aprobacion']) && $invitation['fecha_aprobacion'] > 0 ? date('d/m/Y H:i', $invitation['fecha_aprobacion']) : 'Pendiente';
 
-                        // --- Construye la URL al archivo de imagen QR (para el viejo "Ver QR" si lo mantienes) ---
-                        $qr_image_file_url = $code !== 'N/A' ? 'qr/' . urlencode($code) . '.png' : '#'; // Ruta web relativa a la imagen
+                        // --- Construye la URL al archivo de imagen QR (para el botón "QR") ---
+                        // Asegúrate que $qr_codes_dir esté definido en config.php y sea accesible vía web.
+                        // Si URL_BASE está definida en config.php, la usamos.
+                        if (defined('URL_BASE') && $code !== 'N/A') {
+                            $qr_image_web_url = URL_BASE . '/qr/' . urlencode($code) . '.png';
+                        } else {
+                            // Fallback si URL_BASE no está definida o el código es N/A
+                            $qr_image_web_url = '#';
+                             if (!defined('URL_BASE')) {
+                                 error_log("URL_BASE no definida en config.php al construir URL de imagen QR en listqr.php.");
+                             }
+                        }
 
                         // --- Construye la URL COMPLETA (absoluta) al LANDING PAGE (/qr/CODE) ---
-                        $landing_page_url = $code !== 'N/A' && defined('URL_BASE') ? URL_BASE . "/qr/" . urlencode($code) : '#';
-                         if (!defined('URL_BASE')) {
-                            // Esto ya se loguea al inicio del script, pero lo mantenemos por si acaso
-                            // error_log("URL_BASE no definida en config.php al construir landing page URL en listqr.php.");
-                         }
+                        // Esta es la URL que el invitado usaría.
+                        if (defined('URL_BASE') && $code !== 'N/A') {
+                             $landing_page_url = URL_BASE . "/qr/" . urlencode($code);
+                        } else {
+                             $landing_page_url = '#';
+                             if (!defined('URL_BASE')) {
+                                 error_log("URL_BASE no definida en config.php al construir landing page URL en listqr.php.");
+                             }
+                        }
 
-                         $can_delete = false;
+                         // --- Lógica de Permisos para botones de acción (Eliminar, Cancelar, Reactivar) ---
+                         // Roles que pueden eliminar globalmente (además del propio anfitrion)
+                         global $delete_allowed_roles_global;
+                         // Asegurarse de que $delete_allowed_roles_global esté definido, si no, usar un array vacío.
+                         $delete_allowed_roles_global = $delete_allowed_roles_global ?? [];
 
-                         // Roles que SIEMPRE pueden eliminar (Administrador, Developer)
-                         // Puedes definir $delete_allowed_roles en config.php si prefieres
-                         $delete_allowed_roles = ['administrador', 'developer'];
+                         $can_delete_globally = in_array($user_role, $delete_allowed_roles_global);
 
-   // 1. Verificar si el rol del usuario actual está en los roles permitidos globales para eliminar
-   if (in_array($user_role, $delete_allowed_roles)) {
-    $can_delete = true;
-} else {
-    // 2. Si no tiene un rol global de eliminación, verificar si es el ANFITRIÓN que creó esta invitación específica
-    $current_user_id = $current_user['id'] ?? null; // ID del usuario logueado
-    $current_user_lote = $current_user['lote'] ?? null; // Lote del usuario logueado
+                         // Verificar si el usuario logueado es el anfitrión de esta invitación
+                         $is_host_of_invite = ($user_id && isset($invitation['anfitrion']['id']) && $invitation['anfitrion']['id'] === $user_id);
 
-    // Datos del anfitrión GUARDADOS en la invitación
-    $invite_anfitrion_id = $invitation['anfitrion']['id'] ?? null;
-    $invite_anfitrion_lote = $invitation['anfitrion']['lote'] ?? null;
+                         // Determinar si el usuario actual puede eliminar esta invitación
+                         // Puede eliminar si tiene permiso global O es el anfitrión Y el estado es 'pendiente'.
+                         $can_delete = ($can_delete_globally || $is_host_of_invite) && ($status === 'pendiente');
 
-    // Si tenemos los datos del usuario logueado Y los datos del anfitrión en la invitación, comparamos.
-    if ($current_user_id && $current_user_lote &&
-        $current_user_id === $invite_anfitrion_id &&
-        $current_user_lote === $invite_anfitrion_lote) {
-        // Si el ID y Lote del usuario logueado coinciden con el ID y Lote del anfitrión guardado en la invitación
-        $can_delete = true;
-    }
-}
-// --- === Fin Lógica de Permisos === ---
 
+                         // Determinar si el usuario actual puede cancelar esta invitación
+                         // Puede cancelar si tiene permiso global O es el anfitrión Y el estado es 'pendiente' o 'aprobado'.
+                         // Usamos $delete_allowed_roles_global para cancelar también por ahora, ajusta si necesitas otro array.
+                         $can_cancel = ($can_delete_globally || $is_host_of_invite) && in_array($status, ['pendiente', 'aprobado']);
+
+                         // Determinar si el usuario actual puede reactivar esta invitación
+                         // Puede reactivar si tiene permiso global O es el anfitrion Y el estado es 'cancelado'.
+                         // Usamos $delete_allowed_roles_global para reactivar también por ahora.
+                         $can_reactivate = ($can_delete_globally || $is_host_of_invite) && ($status === 'cancelado');
 
 
                     ?>
                         <tr class="invitation-summary-row" data-code="<?php echo htmlspecialchars($code); ?>">
                             <td><?php echo htmlspecialchars($guest_name); ?></td>
                             <td><?php echo htmlspecialchars($anfitrion_lote); ?></td>
-                            <td><span class="status-<?php echo htmlspecialchars(strtolower($status)); ?>"><?php echo htmlspecialchars(ucfirst($status)); ?></span></td>
-                            <td colspan="7"></td> </tr>
+                            <td class="status-<?php echo htmlspecialchars(strtolower($status)); ?>"><?php echo htmlspecialchars(ucfirst($status)); ?></td>
+                            <td colspan="7"></td>
+                        </tr>
 
-                            <tr class="invitation-details-row" data-code="<?php echo htmlspecialchars($code); ?>" style="display: none;">
-                            <td colspan="10"> 
-                            <div class="invitation-details-expanded">
-                                    <div class="detail-item"><span class="detail-label">Código:</span> <span class="detail-value"><?php echo htmlspecialchars($code); ?></span></div>
+                        <tr class="invitation-details-row" data-code="<?php echo htmlspecialchars($code); ?>" style="display: none;">
+                            <td colspan="9">
+                                <div class="invitation-details-expanded">
+
+                                <div class="button-group-expanded">
+                                         <button class="btn show-qr-modal-btn" data-qr-url="<?php echo htmlspecialchars($qr_image_web_url); ?>">QR</button>
+                                         <button class="btn copy-link-btn" data-link="<?php echo htmlspecialchars($landing_page_url); ?>">Copiar</button>
+                                        <?php if ($can_delete): ?>
+                                            <form method="POST" action="includes/delete_invitation.php" style="display: inline-block;">
+                                                <input type="hidden" name="action" value="delete">
+                                                <input type="hidden" name="code" value="<?php echo htmlspecialchars($code); ?>">
+                                                <button type="submit" class="btn delete-invite-btn" onclick="return confirm('¿Estás seguro de que deseas eliminar esta invitación?');">Borrar</button>
+                                            </form>
+                                        <?php endif; ?>
+
+                                        <?php if ($can_cancel): ?>
+                                            <form method="POST" action="includes/invitation_handler.php" style="display: inline-block;">
+                                                <input type="hidden" name="action" value="cancel">
+                                                <input type="hidden" name="code" value="<?php echo htmlspecialchars($code); ?>">
+                                                <button type="submit" class="btn cancel-invite-btn" onclick="return confirm('¿Estás seguro de que deseas cancelar esta invitación?');">Cancelar</button>
+                                            </form>
+                                        <?php elseif ($can_reactivate): // Mostrar Reactivar si no se puede cancelar y se puede reactivar ?>
+                                             <form method="POST" action="includes/invitation_handler.php" style="display: inline-block;">
+                                                <input type="hidden" name="action" value="reactivate">
+                                                <input type="hidden" name="code" value="<?php echo htmlspecialchars($code); ?>">
+                                                <button type="submit" class="btn reactivate-invite-btn" onclick="return confirm('¿Estás seguro de que deseas reactivar esta invitación?');">Reactivar</button>
+                                            </form>
+                                        <?php endif; ?>
+
+                                    </div>
+                                    <br>
                                     <div class="detail-item"><span class="detail-label">Invitado:</span> <span class="detail-value"><?php echo htmlspecialchars($guest_name); ?></span></div>
-                                    <div class="detail-item"><span class="detail-label">Anfitrión:</span> <span class="detail-value"><?php echo htmlspecialchars($anfitrion_name); ?></span></div>
-                                    <div class="detail-item"><span class="detail-label">Lote:</span> <span class="detail-value"><?php echo htmlspecialchars($anfitrion_lote); ?></span></div>
+                                    <div class="detail-item"><span class="detail-label">Anfitrión:</span> <span class="detail-value"><?php echo htmlspecialchars($anfitrion_name); ?> (Lote: <?php echo htmlspecialchars($anfitrion_lote); ?>)</span></div>
                                     <div class="detail-item"><span class="detail-label">Creación:</span> <span class="detail-value"><?php echo htmlspecialchars($fecha_creacion); ?></span></div>
                                     <div class="detail-item"><span class="detail-label">Expira:</span> <span class="detail-value"><?php echo htmlspecialchars($fecha_expiracion); ?></span></div>
                                      <div class="detail-item"><span class="detail-label">Estado:</span> <span class="detail-value"><span class="status-<?php echo htmlspecialchars(strtolower($status)); ?>"><?php echo htmlspecialchars(ucfirst($status)); ?></span></span></div>
                                     <div class="detail-item"><span class="detail-label">Validación:</span> <span class="detail-value"><?php echo htmlspecialchars($fecha_aprobacion); ?></span></div>
+                                     <div class="detail-item"><span class="detail-label">URL Invitado:</span> <span class="detail-value"><a href="<?php echo htmlspecialchars($landing_page_url); ?>" target="_blank">ENLACE QR</a></span></div>
 
-                                    <div class="button-group-expanded">
-                                         <a href="<?php echo htmlspecialchars($qr_image_file_url); ?>" target="_blank" class="btn">Ver QR</a>
-                                         <a href="<?php echo htmlspecialchars($landing_page_url); ?>" target="_blank" class="btn">Ver Enlace</a>
 
-                                         <button class="btn copy-link-btn" data-url="<?php echo htmlspecialchars($landing_page_url); ?>">Copiar Enlace</button>
-                                         <?php if ($can_delete): ?>
-                                             <button class="btn delete-invite-btn" data-code="<?php echo htmlspecialchars($code); ?>">Eliminar</button>
-                                         <?php endif; ?>
-                                     </div>
-                                     </div>
+
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
-            <!-- === === Fin Tabla de Invitaciones === === -->
-        <?php endif; ?>
+            <?php endif; ?>
 
-    </div> <!-- Cierre del div.container -->
+    </div> <div class="footer">
+        <span>Usuario actual: <?php echo $display_username; ?> (Rol: <?php echo $display_user_role; ?>)</span>
+    </div>
 
-    <!-- === === JavaScript para el Botón Copiar Enlace === === -->
-    <!-- Este script debe ir después de que los botones con la clase 'copy-link-btn' existen en el DOM. -->
+    <div id="qrModalOverlay" class="modal-overlay" style="display: none;">
+        <div id="qrModalContent" class="modal-content">
+            <img id="qrModalImage" src="" alt="Código QR de Invitación">
+        </div>
+    </div>
     <script>
-        // Selecciona todos los botones con la clase 'copy-link-btn' en la página.
-        document.querySelectorAll('.copy-link-btn').forEach(button => {
-            // Añade un "escuchador de eventos" (event listener) para el clic en cada botón.
-            button.addEventListener('click', function() {
-                // 'this' se refiere al botón que fue clickeado.
-                // Obtenemos la URL que queremos copiar del atributo 'data-url' de ese botón.
-                const urlToCopy = this.dataset.url;
-
-                // Intenta usar la API del Portapapeles moderna (navigator.clipboard).
-                // Es asíncrona y requiere permisos, pero es el método recomendado.
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(urlToCopy)
-                        .then(() => {
-                            // Si la copia fue exitosa:
-                            console.log('URL copiada al portapapeles:', urlToCopy);
-                            // Opcional: Dar feedback visual al usuario cambiando el texto del botón.
-                            const originalText = this.textContent; // Guarda el texto original del botón.
-                            this.textContent = '¡Copiado!'; // Cambia el texto del botón.
-                            // Restaura el texto original después de 2 segundos.
-                            setTimeout(() => {
-                                this.textContent = originalText;
-                            }, 2000);
-                        })
-                        .catch(err => {
-                            // Si hubo un error al usar la API moderna (ej: permisos denegados).
-                            console.error('Error al copiar al portapapeles (modern API):', err);
-                            // Intenta el método de fallback para asegurar la copia.
-                            fallbackCopyTextToClipboard(urlToCopy, this);
-                        });
-                } else {
-                    // Si la API moderna no está disponible (navegadores más antiguos).
-                    console.warn('navigator.clipboard no disponible. Usando fallback.');
-                    fallbackCopyTextToClipboard(urlToCopy, this);
-                }
-            });
-        });
-
-        // Función de fallback para copiar texto al portapapeles en navegadores antiguos
-        // Crea un área de texto temporal, pone el texto, lo selecciona, copia y elimina el área de texto.
-        function fallbackCopyTextToClipboard(text, buttonElement) {
-            const textArea = document.createElement("textarea");
-            textArea.value = text; // Asigna el texto al área de texto.
-
-            // Estilos para hacer el área de texto invisible y evitar que afecte el layout/scroll.
-            textArea.style.top = "0";
-            textArea.style.left = "0";
-            textArea.style.position = "fixed"; // Posición fija fuera del flujo normal.
-            textArea.style.opacity = "0"; // Completamente transparente.
-
-            document.body.appendChild(textArea); // Añade el área de texto al final del cuerpo.
-            textArea.focus(); // Enfoca el área de texto.
-            textArea.select(); // Selecciona todo el texto dentro del área de texto.
-
-            try {
-                // Intenta ejecutar el comando de copia heredado.
-                const successful = document.execCommand('copy');
-                const msg = successful ? '¡Copiado (fallback)!' : 'Error al copiar (fallback).';
-                 console.log('Fallback: Copying text command was ' + (successful ? 'successful' : 'unsuccessful'));
-
-                 // Opcional: Dar feedback visual al usuario.
-                 const originalText = buttonElement.textContent;
-                 buttonElement.textContent = msg;
-                 setTimeout(() => {
-                     buttonElement.textContent = originalText;
-                 }, 2000);
-
-            } catch (err) {
-                // Si incluso el comando heredado falla.
-                console.error('Fallback: Oops, unable to copy', err);
-                 // Opcional: Feedback de error.
-                 buttonElement.textContent = 'Error';
-            }
-
-            document.body.removeChild(textArea); // Elimina el área de texto temporal del DOM.
-        }
-
-
- // Espera a que el DOM esté completamente cargado antes de ejecutar el script
- document.addEventListener('DOMContentLoaded', function() {
-            // Selecciona todas las filas de resumen en la tabla (las que tienen la clase 'invitation-summary-row')
+        // Espera a que el DOM (Document Object Model) esté completamente cargado y parseado.
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- === Lógica para expandir/colapsar filas de detalles en la tabla === ---
             const summaryRows = document.querySelectorAll('.invitation-summary-row');
 
-            // Itera sobre cada fila de resumen encontrada
             summaryRows.forEach(row => {
-                // Añade un "escuchador de eventos" (event listener) para el evento 'click' en cada fila de resumen
                 row.addEventListener('click', function() {
-                    // 'this' se refiere a la fila de resumen que fue clickeada.
-                    // Buscamos el elemento SIBLING (hermano) siguiente a la fila de resumen clickeada.
-                    // En nuestra estructura, la fila de detalles está inmediatamente después de la fila de resumen en el HTML.
+                    // Encuentra la fila de detalles asociada (la siguiente hermana)
                     const detailsRow = this.nextElementSibling;
 
-                    // Verificamos si el siguiente elemento hermano existe Y si tiene la clase 'invitation-details-row'.
-                    // Esto nos asegura de que estamos actuando sobre la fila de detalles correcta.
+                    // Verifica si es realmente una fila de detalles y la alterna
                     if (detailsRow && detailsRow.classList.contains('invitation-details-row')) {
-                        // === === Lógica para TOGGLE (mostrar/ocultar) la fila de detalles === ===
-                        // Comprueba el estado actual de la propiedad CSS 'display' de la fila de detalles.
-                        if (detailsRow.style.display === 'none' || detailsRow.style.display === '') {
-                            // Si está oculta (display es 'none' o no está definido), la mostramos.
-                            // 'table-row' es el valor display correcto para las filas de tabla.
-                            detailsRow.style.display = 'table-row';
-                            // Opcional: Añadir una clase para cambiar el estilo de la fila resumen cuando está expandida
-                            // this.classList.add('expanded');
-                        } else {
-                            // Si está visible, la ocultamos.
-                            detailsRow.style.display = 'none';
-                            // Opcional: Quitar la clase 'expanded'
-                            // this.classList.remove('expanded');
-                        }
+                        detailsRow.style.display = detailsRow.style.display === 'none' || detailsRow.style.display === '' ? 'table-row' : 'none';
+                    }
+                });
+            });
+
+            // --- === Lógica para el botón Copiar Enlace === ---
+            const copyButtons = document.querySelectorAll('.copy-link-btn');
+            copyButtons.forEach(button => {
+                button.addEventListener('click', function(event) {
+                    event.stopPropagation(); // Evita que el clic en el botón dispare la expansión/colapso de la fila
+                    const linkToCopy = this.getAttribute('data-link');
+                    if (linkToCopy) {
+                        navigator.clipboard.writeText(linkToCopy).then(function() {
+                            // Opcional: Mostrar un mensaje de confirmación al usuario
+                            alert('Enlace copiado al portapapeles: ' + linkToCopy);
+                        }).catch(function(err) {
+                            console.error('Error al copiar el enlace: ', err);
+                            alert('Error al copiar el enlace.');
+                        });
                     }
                 });
             });
 
 
+            // --- === Lógica para la Modal del QR === ---
+            // Obtenemos referencias a los elementos del modal por sus IDs
+            const qrModalOverlay = document.getElementById('qrModalOverlay'); // El fondo oscuro (overlay)
+            const qrModalContent = document.getElementById('qrModalContent'); // El contenedor del contenido (la caja blanca)
+            const qrModalImage = document.getElementById('qrModalImage'); // La etiqueta <img> donde se mostrará el QR
+
+            // Seleccionamos todos los botones con la clase 'show-qr-modal-btn'
+            const showQrModalButtons = document.querySelectorAll('.show-qr-modal-btn');
 
 
-     // Selecciona todos los botones con la clase 'delete-invite-btn'
-     const deleteButtons = document.querySelectorAll('.delete-invite-btn');
+            // === Lógica para ABRIR el Modal al hacer clic en el botón "QR" ===
+            // Iteramos sobre cada botón "QR" encontrado y le añadimos un escuchador de eventos
+            showQrModalButtons.forEach(button => {
+                button.addEventListener('click', function(event) {
+                    event.stopPropagation(); // Evita que el clic en el botón también colapse/expanda la fila de la tabla
 
-// Itera sobre cada botón Eliminar encontrado
-deleteButtons.forEach(button => {
-    // Añade un escuchador de eventos para el clic en cada botón Eliminar
-    button.addEventListener('click', function() {
-        // 'this' se refiere al botón clickeado.
-        // Obtenemos el código de la invitación del atributo 'data-code'.
-        const invitationCode = this.dataset.code;
+                    // Obtenemos la URL de la imagen del código QR desde el atributo 'data-qr-url' del botón clickeado
+                    const qrImageUrl = this.getAttribute('data-qr-url');
 
-        // Mostramos un cuadro de diálogo de confirmación al usuario.
-        const confirmDelete = confirm('¿Estás seguro de que deseas eliminar esta invitación con código ' + invitationCode + '? Esta acción no se puede deshacer.');
+                    // Verificamos si obtuvimos una URL válida
+                    if (qrImageUrl && qrImageUrl !== '#') {
+                        // Establecemos la URL de la imagen obtenida como el 'src' de la etiqueta <img> dentro del modal
+                        qrModalImage.src = qrImageUrl;
 
-        // Si el usuario confirmó la eliminación (pulso OK)
-        if (confirmDelete) {
-            console.log('Usuario confirmó eliminación para código:', invitationCode);
+                        // Mostramos el modal cambiando el estilo 'display' del overlay a 'flex'.
+                        // Asumimos que las reglas CSS para '.modal-overlay' usan 'display: flex'
+                        // para centrar el contenido (modal-content).
+                        qrModalOverlay.style.display = 'flex';
 
-            // === === Lógica para enviar la solicitud de eliminación al servidor (AJAX) === ===
+                        // Opcional: Añadir una clase al body para prevenir el scroll de la página principal mientras la modal está abierta.
+                        // document.body.classList.add('modal-open'); // Requiere CSS para 'body.modal-open { overflow: hidden; }'
 
-            // La URL del script PHP que procesará la eliminación.
-            // Apuntamos a invitation_handler.php donde pusimos el bloque POST.
-            const handlerUrl = 'includes/delete_invitation.php'; // <<< ASEGÚRATE QUE ESTA RUTA SEA CORRECTA
-
-            // Preparamos los datos a enviar en la solicitud POST.
-            const formData = new FormData();
-            formData.append('action', 'delete'); // Le decimos al script qué acción queremos ('delete')
-            formData.append('code', invitationCode); // Le enviamos el código de la invitación a eliminar
-
-            // Usamos la API Fetch para enviar la solicitud POST de forma asíncrona.
-            fetch(handlerUrl, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                // Se ejecuta cuando se recibe una respuesta.
-                if (!response.ok) {
-                    throw new Error('La respuesta de la red no fue OK. Estado: ' + response.status + ' ' + response.statusText);
-                }
-                // Parsea la respuesta como JSON.
-                return response.json();
-            })
-            .then(data => {
-                // Se ejecuta si el parseo JSON fue exitoso. 'data' es el objeto JSON.
-                console.log('Respuesta del servidor (eliminar):', data); // Loguea la respuesta del servidor
-
-                if (data.success) {
-                    alert('Invitación eliminada con éxito: ' + data.message);
-
-                    // === Opcional: Eliminar la fila de la tabla en el navegador SIN recargar ===
-                    // Encontramos la fila de detalles más cercana al botón clickeado.
-                    const detailsRow = button.closest('tr.invitation-details-row');
-                    if (detailsRow) {
-                        // Encontramos la fila de resumen justo antes.
-                        const summaryRow = detailsRow.previousElementSibling;
-                        if (summaryRow && summaryRow.classList.contains('invitation-summary-row')) {
-                            // Eliminamos ambas filas del DOM.
-                            summaryRow.remove();
-                            detailsRow.remove();
-                            console.log('Filas eliminadas del DOM.');
-                        } else {
-                             console.warn('No se pudieron encontrar las filas summary/details adyacentes. Recargando página.');
-                             window.location.reload(); // Recarga si no se puede eliminar del DOM limpiamente
-                        }
                     } else {
-                         console.warn('No se pudo encontrar la fila de detalles. Recargando página.');
-                         window.location.reload(); // Recarga si no se puede encontrar la fila de detalles
+                        // Si no hay URL válida en el atributo data-qr-url
+                        console.error('DEBUG_LISTQR_JS: No se encontró URL de imagen QR válida en el atributo data-qr-url.');
+                        alert('Error: No se pudo obtener la imagen del QR.');
+                    }
+                });
+            });
+
+            // === Lógica para CERRAR el Modal al hacer clic en la IMAGEN del QR ===
+            // Añadimos un escuchador de eventos para el clic en la imagen dentro del modal.
+            qrModalImage.addEventListener('click', function() {
+                // Ocultamos el modal cambiando el estilo 'display' del overlay a 'none'.
+                qrModalOverlay.style.display = 'none';
+
+                // Limpiamos la fuente de la imagen al cerrar la modal.
+                // Esto es una buena práctica para liberar recursos y evitar mostrar la imagen anterior brevemente si se abre otra modal.
+                qrModalImage.src = '';
+
+                // Opcional: Remover la clase del body si la añadimos al abrir.
+                // document.body.classList.remove('modal-open');
+            });
+
+            // Opcional: Cerrar la modal al hacer clic en el overlay oscuro (fuera del contenido del modal)
+             qrModalOverlay.addEventListener('click', function(event) {
+                 // Verificamos si el elemento donde se hizo clic es exactamente el overlay
+                 // (y no el contenido del modal o la imagen dentro de él).
+                 if (event.target === qrModalOverlay) {
+                     // Si el clic fue en el overlay, cerramos la modal.
+                     qrModalOverlay.style.display = 'none';
+                     qrModalImage.src = ''; // Limpiamos la imagen
+                     // document.body.classList.remove('modal-open');
+                 }
+             });
+
+            // Opcional: Cerrar la modal al presionar la tecla ESC
+            document.addEventListener('keydown', function(event) {
+                // Verificamos si la tecla presionada es 'Escape' Y si el modal está visible.
+                if (event.key === 'Escape' && qrModalOverlay.style.display === 'flex') {
+                    // Si se presionó Escape y el modal está visible, lo cerramos.
+                    qrModalOverlay.style.display = 'none';
+                    qrModalImage.src = ''; // Limpiamos la fuente de la imagen
+                    // document.body.classList.remove('modal-open');
+                }
+            });
+
+             // --- === Lógica para los botones Eliminar, Cancelar y Reactivar (usando AJAX) === ---
+             // Seleccionamos todos los botones de acción relevantes.
+             document.querySelectorAll('.delete-invite-btn, .cancel-invite-btn, .reactivate-invite-btn').forEach(button => {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault(); // Prevenir el envío del formulario por defecto
+
+                    // Encuentra el formulario más cercano al botón clickeado
+                    const form = button.closest('form');
+                    if (!form) {
+                        console.error('DEBUG_LISTQR_JS: Botón de acción no encontrado dentro de un formulario.');
+                        return;
                     }
 
-                } else {
-                    // Si el servidor reporta un error (success: false)
-                    alert('Error al eliminar la invitación: ' + (data.message || 'Mensaje de error desconocido.'));
-                }
-            })
-            .catch(error => {
-                // Error en la solicitud Fetch (red, etc.)
-                console.error('Fetch error al eliminar invitación:', error);
-                alert('Error en la comunicación con el servidor al intentar eliminar la invitación.');
+                    const invitationCode = form.querySelector('input[name="code"]').value; // Obtiene el código del input hidden dentro del formulario
+                    const action = form.querySelector('input[name="action"]').value; // Obtiene la acción del input hidden
+
+                    // Determinar el mensaje de confirmación basado en la acción
+                    let confirmMessage;
+                    switch(action) {
+                        case 'delete':
+                            confirmMessage = '¿Estás seguro de que deseas eliminar esta invitación? Esta acción no se puede deshacer.';
+                            break;
+                        case 'cancel':
+                            confirmMessage = '¿Estás seguro de que deseas cancelar esta invitación?';
+                            break;
+                        case 'reactivate':
+                            confirmMessage = '¿Estás seguro de que deseas reactivar esta invitación?';
+                            break;
+                        default:
+                            console.error('DEBUG_LISTQR_JS: Acción desconocida en el formulario:', action);
+                            return; // Salir si la acción es desconocida
+                    }
+
+
+                    const confirmAction = confirm(confirmMessage);
+
+                    if (confirmAction) {
+                        console.log(`DEBUG_LISTQR_JS: Usuario confirmó acción '${action}' para código:`, invitationCode);
+
+                        // La URL del script PHP que procesará la acción.
+                        // Para Eliminar, apuntamos a delete_invitation.php
+                        // Para Cancelar/Reactivar, apuntamos a invitation_handler.php
+                        const handlerUrl = (action === 'delete') ? form.action : 'includes/delete_invitation.php'; // Usa la acción del formulario si es delete, sino invitation_handler.php
+
+                        // Preparar los datos a enviar en la solicitud POST.
+                        const formData = new FormData();
+                        formData.append('action', action); // Usar la acción determinada
+                        formData.append('code', invitationCode);
+
+                        // Enviar la solicitud Fetch.
+                        fetch(handlerUrl, {
+                            method: 'POST', // Método HTTP
+                            body: formData // Datos a enviar
+                        })
+                        .then(response => {
+                            // Se ejecuta cuando se recibe una respuesta.
+                            if (!response.ok) {
+                                throw new Error('La respuesta de la red no fue OK. Estado: ' + response.status + ' ' + response.statusText);
+                            }
+                            // Parsea la respuesta como JSON.
+                            return response.json();
+                        })
+                        .then(data => {
+                            // Se ejecuta si el parseo JSON fue exitoso. 'data' es el objeto JSON.
+                            console.log(`DEBUG_LISTQR_JS: Respuesta del servidor para acción '${action}':`, data); // Loguear la acción
+
+                            if (data.success) {
+                                alert('Invitación ' + (action === 'delete' ? 'eliminada' : (action === 'cancel' ? 'cancelada' : 'reactivada')) + ' con éxito: ' + data.message); // Mensaje dinámico
+
+                                // --- === Actualizar el UI sin recargar === ---
+                                // Encontramos la fila de detalles más cercana al botón clickeado.
+                                const detailsRow = button.closest('tr.invitation-details-row');
+                                if (detailsRow) {
+                                     // Encontramos la fila resumen justo antes.
+                                     const summaryRow = detailsRow.previousElementSibling;
+
+                                    if (action === 'delete') {
+                                        // Si fue eliminación, remover ambas filas
+                                         if (summaryRow && summaryRow.classList.contains('invitation-summary-row')) {
+                                             summaryRow.remove();
+                                             detailsRow.remove();
+                                             console.log('Filas eliminadas del DOM.');
+                                         } else {
+                                              console.warn('DEBUG_LISTQR_JS: No se pudieron encontrar las filas summary/details adyacentes para eliminar. Recargando página.');
+                                              window.location.reload(); // Recarga si no se puede eliminar del DOM limpiamente
+                                         }
+                                    } else if (action === 'cancel' || action === 'reactivate') {
+                                        // Si fue cancelación o reactivación, actualizar el estado y los botones
+                                        if (data.details) {
+                                            // Actualizar el span de estado en la fila de detalles
+                                            const statusSpanDetails = detailsRow.querySelector('.detail-item .detail-value span[class^="status-"]');
+                                            if (statusSpanDetails) {
+                                                statusSpanDetails.className = ''; // Remover clases de estado anteriores
+                                                statusSpanDetails.classList.add(`status-${data.details.status}`); // Añadir nueva clase de estado
+                                                statusSpanDetails.textContent = data.details.status.charAt(0).toUpperCase() + data.details.status.slice(1); // Actualizar texto
+                                            }
+
+                                            // Actualizar el span de estado en la fila resumen si existe
+                                            if (summaryRow && summaryRow.classList.contains('invitation-summary-row')) {
+                                                 const statusSpanSummary = summaryRow.querySelector('td span[class^="status-"]');
+                                                 if (statusSpanSummary) {
+                                                     statusSpanSummary.className = ''; // Remover clases de estado anteriores
+                                                     statusSpanSummary.classList.add(`status-${data.details.status}`); // Añadir nueva clase de estado
+                                                     statusSpanSummary.textContent = data.details.status.charAt(0).toUpperCase() + data.details.status.slice(1); // Actualizar texto
+                                                 }
+                                            }
+
+
+                                            // Lógica para mostrar/ocultar botones después de la acción
+                                            const actionButtonsContainer = button.closest('.button-group-expanded');
+                                            if(actionButtonsContainer) {
+                                                // Ocultar todos los formularios de acción (que contienen los botones)
+                                                actionButtonsContainer.querySelectorAll('form').forEach(form => form.style.display = 'none');
+
+                                                // Mostrar solo el formulario/botón relevante para el NUEVO estado (data.details.status)
+                                                // Nota: Los botones QR, Escanear, Enlace Invitado, Copiar Enlace no están dentro de formularios,
+                                                // por lo que permanecen visibles a menos que los ocultemos explícitamente aquí.
+                                                // Como queremos que sigan visibles, no los tocamos.
+
+                                                // Mostrar Eliminar si el nuevo estado es 'pendiente'
+                                                if (data.details.status === 'pendiente') {
+                                                     const deleteForm = actionButtonsContainer.querySelector('form input[name="action"][value="delete"]');
+                                                     if(deleteForm) deleteForm.closest('form').style.display = 'inline-block';
+                                                }
+
+                                                // Mostrar Cancelar si el nuevo estado es 'pendiente' o 'aprobado'
+                                                if (data.details.status === 'pendiente' || data.details.status === 'aprobado') {
+                                                    const cancelForm = actionButtonsContainer.querySelector('form input[name="action"][value="cancel"]');
+                                                    if(cancelForm) cancelForm.closest('form').style.display = 'inline-block';
+                                                }
+
+                                                // Mostrar Reactivar si el nuevo estado es 'cancelado'
+                                                if (data.details.status === 'cancelado') {
+                                                    const reactivateForm = actionButtonsContainer.querySelector('form input[name="action"][value="reactivate"]');
+                                                    if(reactivateForm) reactivateForm.closest('form').style.display = 'inline-block';
+                                                }
+
+                                            } else {
+                                                console.warn('DEBUG_LISTQR_JS: No se encontró el contenedor de botones de acción. Recargando página para actualizar UI.');
+                                                window.location.reload(); // Recarga si no se puede actualizar el UI
+                                            }
+
+
+                                        } else {
+                                            console.warn(`DEBUG_LISTQR_JS: Acción '${action}' completada pero no se pudieron obtener detalles para actualizar UI. Recargando página.`);
+                                            window.location.reload(); // Recarga para asegurar que el UI esté correcto
+                                        }
+                                    }
+
+
+                                } else {
+                                     console.warn(`DEBUG_LISTQR_JS: No se pudo encontrar la fila de detalles para actualizar UI después de acción '${action}'. Recargando página.`);
+                                     window.location.reload(); // Recarga si no se puede encontrar la fila de detalles
+                                }
+
+
+                            } else {
+                                // Si el servidor reporta un error (success: false)
+                                alert('Error al ' + (action === 'delete' ? 'eliminar' : (action === 'cancel' ? 'cancelar' : 'reactivar')) + ' la invitación: ' + (data.message || 'Mensaje de error desconocido.'));
+                            }
+                        })
+                        .catch(error => {
+                            // Error en la solicitud Fetch (red, etc.)
+                            console.error(`DEBUG_LISTQR_JS: Fetch error al realizar acción '${action}' en invitación:`, error);
+                            alert('Error en la comunicación con el servidor al intentar ' + (action === 'delete' ? 'eliminar' : (action === 'cancel' ? 'cancelar' : 'reactivar')) + ' la invitación.');
+                        });
+                    } else {
+                        // Si el usuario CANCELÓ la acción.
+                        console.log(`DEBUG_LISTQR_JS: Acción '${action}' cancelada por el usuario.`);
+                    }
+                });
             });
 
-            // === Fin Lógica para enviar la solicitud de eliminación ===
-
-        } else {
-            // Si el usuario CANCELÓ la eliminación.
-            console.log('Eliminación cancelada por el usuario.');
-        }
-    });
-});
-
-
-        });
-
-
-
-    </script>
-
-    <!-- Puedes incluir app.js si contiene lógica global necesaria para esta página. -->
-    <!-- <script src="js/app.js"></script> -->
-
-
-    </div> <div id="qrModalOverlay" style="display: none;">
-        <div id="qrModalContent">
-            <img id="qrModalImage" src="" alt="Código QR en Modal">
-        </div>
-    </div>
-    <script>
-   
-        document.addEventListener('DOMContentLoaded', function() {
-            // Obtenemos referencias a los elementos del modal por sus IDs
-            const modalOverlay = document.getElementById('qrModalOverlay'); // El fondo oscuro
-            const modalContent = document.getElementById('qrModalContent'); // El contenedor blanco
-            const modalImage = document.getElementById('qrModalImage'); // La etiqueta <img> donde irá el QR
-
-            // Seleccionamos todos los enlaces "Ver QR" en la tabla.
-            // Buscamos enlaces <a> con clase 'btn' que tengan el texto "Ver QR".
-            // Esto nos asegura de seleccionar solo el botón "Ver QR" y no "Ver Enlace" o "Copiar Enlace" si también tienen la clase 'btn'.
-            const viewQrLinks = document.querySelectorAll('a.btn'); // Selecciona todos los enlaces con clase btn
-            const viewQrLinksFiltered = Array.from(viewQrLinks).filter(link =>
-                link.textContent.trim() === 'Ver QR' // Filtra para quedarte solo con los que dicen "Ver QR"
-            );
-
-
-            // === === Lógica para ABRIR el Modal === ===
-            // Iteramos sobre cada enlace "Ver QR" encontrado
-            viewQrLinksFiltered.forEach(link => {
-                 // Añadimos un escuchador de eventos para el clic en cada enlace
-                 link.addEventListener('click', function(event) {
-                    event.preventDefault(); // ¡Importante! Previene la acción por defecto del enlace (abrir en nueva pestaña)
-
-                    // Obtenemos la URL de la imagen del código QR desde el atributo 'href' del enlace clickeado
-                    const qrImageUrl = this.href;
-
-                    // Establecemos la URL de la imagen obtenida como el 'src' de la etiqueta <img> dentro del modal
-                    modalImage.src = qrImageUrl;
-
-                    // Mostramos el modal cambiando su estilo 'display' a 'flex' (que usamos en CSS para centrar)
-                    modalOverlay.style.display = 'flex'; // Hace visible el overlay y centra el contenido
-                 });
-            });
-
-            // === === Lógica para CERRAR el Modal === ===
-            // Queremos que se cierre al hacer clic en la imagen o en el fondo oscuro.
-
-            // Cierra el modal al hacer clic en la IMAGEN dentro del modal
-            modalImage.addEventListener('click', function() {
-                modalOverlay.style.display = 'none'; // Oculta el overlay (y todo el modal)
-                modalImage.src = ''; // Limpia la fuente de la imagen (opcional pero buena práctica)
-            });
-
-             // Opcional: Cierra el modal al hacer clic en el OVERLAY (el fondo oscuro), pero no en el contenido del modal
-             modalOverlay.addEventListener('click', function(event) {
-                 // Si el clic fue directamente en el overlay (no en el contenido del modal)
-                 if (event.target === modalOverlay) {
-                     modalOverlay.style.display = 'none'; // Oculta el modal
-                     modalImage.src = ''; // Limpia la fuente de la imagen
-                 }
-             });
-
-             // Opcional: Cierra el modal al presionar la tecla Escape
-             document.addEventListener('keydown', function(event) {
-                 if (event.key === 'Escape' || event.key === 'Esc') { // Verifica si la tecla es Escape
-                     if (modalOverlay.style.display !== 'none') { // Solo si el modal está visible
-                          modalOverlay.style.display = 'none'; // Oculta el modal
-                          modalImage.src = ''; // Limpia la fuente de la imagen
-                     }
-                 }
-             });
 
         }); // Fin de DOMContentLoaded
     </script>
 
+    <div id="qrModalOverlay" class="modal-overlay" style="display: none;">
+        <div id="qrModalContent" class="modal-content">
+            <img id="qrModalImage" src="" alt="Código QR de Invitación">
+        </div>
+    </div>
+    <script>
+   // Script de la modal QR (copiado de versiones anteriores para restaurar la funcionalidad)
+        document.addEventListener('DOMContentLoaded', function() {
+            // Obtenemos referencias a los elementos del modal por sus IDs
+            const qrModalOverlay = document.getElementById('qrModalOverlay'); // El fondo oscuro
+            const qrModalContent = document.getElementById('qrModalContent'); // El contenedor blanco
+            const qrModalImage = document.getElementById('qrModalImage'); // La etiqueta <img> donde irá el QR
+
+            // Seleccionamos todos los botones con la clase 'show-qr-modal-btn'
+            const showQrModalButtons = document.querySelectorAll('.show-qr-modal-btn');
 
 
+            // === Lógica para ABRIR el Modal ===
+            showQrModalButtons.forEach(button => {
+                 button.addEventListener('click', function(event) {
+                    event.stopPropagation(); // Evita que el clic en el botón también colapse/expanda la fila de la tabla
+
+                    const qrImageUrl = this.getAttribute('data-qr-url');
+
+                    if (qrImageUrl && qrImageUrl !== '#') {
+                        qrModalImage.src = qrImageUrl;
+                        qrModalOverlay.style.display = 'flex';
+                    } else {
+                        console.error('DEBUG_LISTQR_JS: No se encontró URL de imagen QR válida en el atributo data-qr-url.');
+                        alert('Error: No se pudo obtener la imagen del QR.');
+                    }
+                 });
+            });
+
+            // === Lógica para CERRAR el Modal ===
+            // Cierra el modal al hacer clic en la IMAGEN del QR
+            qrModalImage.addEventListener('click', function() {
+                qrModalOverlay.style.display = 'none';
+                qrModalImage.src = '';
+            });
+
+             // Cierra el modal al hacer clic en el OVERLAY (fondo oscuro)
+             qrModalOverlay.addEventListener('click', function(event) {
+                 if (event.target === qrModalOverlay) {
+                     qrModalOverlay.style.display = 'none';
+                     qrModalImage.src = '';
+                 }
+             });
+
+             // Cierra el modal al presionar la tecla Escape
+             document.addEventListener('keydown', function(event) {
+                 if (event.key === 'Escape' && qrModalOverlay.style.display === 'flex') {
+                     qrModalOverlay.style.display = 'none';
+                     qrModalImage.src = '';
+                 }
+             });
+
+        }); // Fin de DOMContentLoaded para la modal QR
+    </script>
 
 
 </body>

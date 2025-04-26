@@ -1,4 +1,5 @@
 <?php
+
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/config.php'; // Asegúrate que esté al principio (si usas algo de config.php aquí, como $main_name)
 
@@ -66,7 +67,6 @@ if (is_logged_in()) {
     <div class="logo-container">
             <img src="assets/logo.png" alt="Logo de la Aplicación">
         </div>
-        <h2>Ingresar</h2>
         <?php if ($error): ?>
             <p class="error"><?php echo $error; ?></p>
         <?php endif; ?>

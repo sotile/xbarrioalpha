@@ -1,11 +1,16 @@
 <?php
 // htdocs/invitar.php - Página para crear nuevas Invitaciones
 
+// --- === Configurar Zona Horaria === ---
+// Establece la zona horaria a la de Buenos Aires, Argentina.
+date_default_timezone_set('America/Argentina/Buenos_Aires');
+
+
 // --- === Includes y Autenticación === ---
 // Asegúrate que estos archivos existan en la carpeta 'includes'.
 require_once __DIR__ . '/includes/auth.php'; // Contiene funciones de autenticación como start_session_if_not_started, gets_current_user, is_logged_in, redirect
 require_once __DIR__ . '/includes/invitation_handler.php'; // Contiene funciones para manejar invitaciones como getInvitationByCode (necesaria si mostramos detalles después de crear)
-require_once __DIR__ . '/includes/config.php'; // Contiene la configuración, incluyendo URL_BASE y roles permitidos como $invite_allowed_roles
+require_once __DIR__ . '/includes/config.php'; // Contiene la configuración, incluyendo URL_BASE, roles permitidos ($invite_allowed_roles) y la nueva variable $qr_default_validity_hours
 
 // Inicia la sesión si aún no se ha iniciado.
 // Esta función debe estar en auth.php.
@@ -47,12 +52,21 @@ $qr_code_content_for_js = ''; // Contiene la URL a scanqr.php con el código (pa
 $scan_url_for_sharing = ''; // Contiene la URL amigable (/qr/CODE) para compartir.
 
 
-// --- === Obtener la Fecha y Hora Actual para el Valor por Defecto del Input datetime-local === ---
-// Este código se ejecuta en cada carga de página (GET y POST).
-// Obtiene la fecha y hora actual del servidor y la formatea para el input type="datetime-local" (YYYY-MM-DDTHH:MM).
-// Asegúrate de que la zona horaria de PHP esté configurada correctamente (php.ini o date_default_timezone_set()).
+// --- === Calcular la Fecha y Hora de Expiración por Defecto === ---
+// Obtiene la fecha y hora actual.
 $now = new DateTime();
-$now_formatted = $now->format('Y-m-d\TH:i'); // Formato requerido por <input type="datetime-local">
+
+// Lee la duración por defecto desde config.php. Usa 24 horas si no está definida.
+// Asegúrate de que $qr_default_validity_hours esté disponible desde config.php.
+global $qr_default_validity_hours; // Asegura que podemos acceder a la variable global
+$default_validity_hours = $qr_default_validity_hours ?? 24; // Usa la variable global de config.php
+
+// Clona la fecha actual y añade la duración por defecto.
+$default_expiration_datetime = clone $now;
+$default_expiration_datetime->modify('+ ' . $default_validity_hours . ' hours');
+
+// Formatea la fecha y hora de expiración por defecto para el input type="datetime-local" (YYYY-MM-DDTHH:MM).
+$default_expiration_formatted = $default_expiration_datetime->format('Y-m-d\TH:i');
 
 
 // --- === Manejar la Redirección desde el Endpoint (Método GET) === ---
@@ -269,16 +283,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                            id="expiration_date"
                            name="expiration_date"
                            required
-                           value="<?php
-                                        // Si hubo un error y se redirigió, podrías pasar el valor en la URL para mostrarlo aquí.
-                                        // Por ahora, usamos la hora actual por defecto en la primera carga o después de un error.
-                                        echo htmlspecialchars($now_formatted);
-                                    ?>"
+                           value="<?php echo htmlspecialchars($default_expiration_formatted); // Usa la fecha/hora por defecto calculada ?>"
                     >
                 </div>
 
                 <button type="submit" class="btn">Generar Invitación</button>
             </form>
+
+            <script>
+                // Script para ajustar la hora a 23:59 al cambiar la fecha en el input datetime-local
+                document.addEventListener('DOMContentLoaded', function() {
+                    const expirationDateInput = document.getElementById('expiration_date');
+
+                    if (expirationDateInput) {
+                        expirationDateInput.addEventListener('change', function() {
+                            const currentDateValue = this.value; // Obtiene el valor actual (YYYY-MM-DDTHH:MM)
+
+                            if (currentDateValue) {
+                                // Extrae solo la parte de la fecha (YYYY-MM-DD)
+                                const datePart = currentDateValue.split('T')[0];
+
+                                // Construye la nueva cadena de fecha y hora con la hora fija a 23:59
+                                const newDateTimeValue = datePart + 'T23:59';
+
+                                // Establece el nuevo valor en el input
+                                this.value = newDateTimeValue;
+                                console.log('DEBUG_INVITAR_JS: Fecha cambiada, hora ajustada a 23:59:', newDateTimeValue);
+                            } else {
+                                // Si el valor se vacía (aunque required lo impide), puedes manejarlo si es necesario
+                                console.log('DEBUG_INVITAR_JS: Input de fecha vaciado.');
+                            }
+                        });
+                    } else {
+                        console.error('DEBUG_INVITAR_JS: Elemento #expiration_date no encontrado.');
+                    }
+                });
+            </script>
 
         <?php endif; // Fin de la condición para mostrar QR/Detalles o Formulario ?>
 

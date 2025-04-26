@@ -2,624 +2,634 @@
 
 /* --- 1. Estilos Generales / Base --- */
 body {
-    font-family: sans-serif;
-    line-height: 1.6;
-    margin: 0;
-    background-color: #f4f4f4;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
-/* El contenedor general, usado en otras páginas (Combinado) */
-.container {
-    max-width: 600px; /* Valor del segundo bloque */
-    margin: 20px auto;
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    width: 95%; /* Propiedad solo en el primer bloque */
-    box-sizing: border-box; /* Propiedad solo en el primer bloque */
-    flex-shrink: 0; /* Propiedad solo en el primer bloque */
-}
-
-/* --- 2. Layout / Estructura Principal --- */
-
-.header {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 20px;
-    text-align: center;
-    flex-shrink: 0;
-}
-
-.footer {
-    width: 100%;
-    background-color: #ccc;
-    color: #333;
-    text-align: center;
-    padding: 15px 20px;
-    flex-shrink: 0;
-    margin-top: auto; /* Empuja el footer al fondo */
-}
-
-/* Estilo para el botón salir fijo (usado en todas las páginas) */
-.logout-btn {
-    position: fixed;
-    top: 15px;
-    right: 15px;
-    padding: 5px 10px;
-    background-color: #f0ad4e;
-    color: white; /* Asegura que el color sea blanco */
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    z-index: 1000;
-    text-decoration: none; /* Enlaces no subrayados */
-    display: inline-block; /* Para que se comporte como botón */
-}
-.logout-btn:hover { background-color: #ec9d00; }
-
-/* Estilo para el botón Atrás fijo */
-.back-btn {
-    position: fixed;
-    top: 15px;
-    left: 15px;
-    padding: 5px 10px;
-    background-color: #6c757d;
-    color: white; /* Asegura que el color sea blanco */
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    z-index: 1000;
-    text-decoration: none; /* Enlaces no subrayados */
-    display: inline-block; /* Para que se comporte como botón */
-}
-.back-btn:hover { background-color: #5a6268; }
-
-
-/* --- 3. Tipografía --- */
-h2 { /* Combinado */
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 1.5em; /* Puedes ajustar este valor base */
-}
-
-/* Título dentro del header, si necesita un tamaño o margen diferente */
-.header h2 {
-    margin: 0; /* Anula el margen del h2 general si está en el header */
-    /* font-size: 1.8em; /* Opcional: un tamaño diferente para el título del header */
-}
-
-h3 { /* Estilo h3 genérico o específico para news-section */
-    margin-top: 0;
-    margin-bottom: 10px;
-    color: #333;
-}
-
-/* --- 4. Elementos de Formulario --- */
-.form-group { margin-bottom: 15px; }
-label { display: block; margin-bottom: 5px; font-weight: bold; }
-
-/* Campos de input y select (Combinado) */
-input[type="text"], input[type="date"], input[type="time"], select {
-    width: 100%; /* Usar 100% con box-sizing: border-box */
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box; /* Incluir padding y borde en el ancho total */
-}
-
-/* Botones Generales (Usando la clase .btn o el selector button) */
-/* Es mejor usar una clase base como .btn y aplicarla a todos los botones/enlaces que deban tener ese estilo */
-.btn, button { /* Aplica estilos base tanto al tag button como a la clase .btn */
-    display: inline-block; /* Necesario para padding/margin en <a> */
-    padding: 10px 15px;
-    background-color: #5cb85c; /* Verde por defecto */
-    color: white !important; /* !important puede ser necesario para enlaces */
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    text-decoration: none; /* Quita subrayado en enlaces */
-    text-align: center; /* Centra texto en botones */
-    transition: background-color 0.3s ease;
-    /* Resetea estilos por defecto específicos del navegador para <button> */
-     -webkit-appearance: none;
-     -moz-appearance: none;
-     appearance: none;
-     margin-top: 10px; /* Espacio arriba de los botones por defecto */
-}
-
-.btn:hover, button:hover {
-    background-color: #4cae4c; /* Verde oscuro al pasar el ratón */
-}
-
-/* Estilos específicos de botón (Anulan el .btn base) */
-.copy-link-btn {
-    background-color: #28a745; /* Verde Bootstrap */
-    border-color: #28a745;
-}
-.copy-link-btn:hover {
-     background-color: #218838;
-     border-color: #1e7e34;
-}
-
-.delete-invite-btn {
-    background-color: #dc3545; /* Rojo (danger) */
-    border-color: #dc3545;
-}
-.delete-invite-btn:hover {
-     background-color: #c82333;
-     border-color: #bd2130;
-}
-
-/* Si necesitas otros tipos de botones (ej: primario, secundario), define más clases */
-/* .btn-primary { background-color: #007bff; border-color: #007bff; } */
-/* .btn-primary:hover { background-color: #0056b3; border-color: #004085; } */
-/* etc. */
-        /* Estilos para el contenedor del logo */
-        .logo-container {
-            text-align: center; /* Centra la imagen si es más pequeña que el div */
-            margin-bottom: 20px; /* Espacio entre el logo y el h2 */
-            width: 100%; /* Ocupa todo el ancho del contenedor padre para centrar */
-        }
-        /* Estilos para la imagen del logo */
-        .logo-container img {
-            max-width: 150px; /* Tamaño máximo del logo (ajusta según necesidad) */
-            height: auto; /* Mantiene la proporción */
-            display: block; /* Elimina espacio extra debajo de la imagen */
-            margin: 0 auto; /* Centra la imagen dentro del logo-container */
-        }
-
-        /* Media Query para ajustar en pantallas más pequeñas si es necesario */
-        @media (max-width: 400px) {
-            .login-container {
-                padding: 20px; /* Reduce padding en pantallas muy pequeñas */
-            }
-             .logo-container img {
-                 max-width: 120px; /* Reduce el tamaño del logo en pantallas muy pequeñas */
-             }
-        }
-
-
-/* --- 5. Componentes Específicos --- */
-
-/* Landing Page (index.php) */
-.landing-image-container {
-    width: 100%;
-    height: 250px;
-    overflow: hidden;
-    position: relative;
-    background-color: #ccc;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-shrink: 0;
-}
-.landing-image-container img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 1;
-}
-.main-title { /* Título principal sobre la imagen */
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 2;
-    font-size: 2em;
-    font-weight: bold;
-    color: white;
-    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.6);
-    text-align: center;
-    padding: 10px;
-    width: 100%;
-    box-sizing: border-box;
-}
-.news-section {
-    text-align: center;
-    margin: 10px auto;
-    max-width: 800px;
-    padding: 20px;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    width: 95%;
-    box-sizing: border-box;
-    flex-shrink: 0;
-}
-.news-section h3 { margin-top: 0; margin-bottom: 10px; color: #333; }
-.news-section p { color: #555; white-space: pre-wrap; }
-
-
-/* Grid de Botones de Navegación (index.php) */
-.button-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 3 columnas por defecto */
-    gap: 10px;
-    margin-top: 10px;
-    margin-bottom: 20px;
-    padding: 0 10px;
-    max-width: 900px;
-    margin-left: auto;
-    margin-right: auto;
-    flex-grow: 1;
-    width: 100%;
-    box-sizing: border-box;
-}
-.grid-button { /* Botón individual en la grid */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    color: #333;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 15px 10px;
-    text-align: center;
-    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-    background-color: #fff;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-.grid-button:hover {
-    background-color: #e9e9e9;
-    border-color: #bbb;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
-}
-.grid-button img { /* Ícono en el botón grid */
-    width: 40px;
-    height: 40px;
-    margin-bottom: 10px;
-}
-.grid-button span { /* Texto en el botón grid */
-    font-size: 1em;
-    font-weight: bold;
-}
-
-
-/* Formulario de Invitación (invitar.php) */
-.anfitrion-info { /* Información del anfitrión */
-    text-align: center;
-    margin-bottom: 20px;
-}
-.qr-section { /* Sección del código QR */
-    text-align: center;
-    margin-top: 20px;
-}
-#qrcode { /* Contenedor del QR generado */
-    margin: 10px auto;
-    padding: 10px;
-    background-color: #fff;
-    display: inline-block;
-}
-
-/* Listado de Invitaciones (listqr.php) */
-.filter-form { /* Formulario de filtro */
-    margin-bottom: 20px;
-    padding: 15px;
-    background-color: #f9f9f9;
-    border-radius: 5px;
-}
-.filter-form label { margin-right: 10px; font-weight: bold; }
-.filter-form select, .filter-form input[type="text"] { /* Campos del filtro */
-     padding: 8px;
-     border: 1px solid #ccc;
-     border-radius: 4px;
-     margin-right: 10px;
-     /* Ajustar ancho si es necesario, o usar flexbox en el contenedor */
-}
-.filter-form button { /* Botón del filtro - puede usar .btn */
-     padding: 8px 15px;
-     background-color: #007bff; /* Azul */
-     color: white;
-     border: none;
-     border-radius: 4px;
-     cursor: pointer;
-}
-.filter-form button:hover { background-color: #0056b3; }
-
-
-/* Tabla de Invitaciones (listqr.php) */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-table th, table td {
-    padding: 10px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-    white-space: nowrap; /* Evita salto de línea */
-    overflow: hidden;
-    text-overflow: ellipsis; /* Añade puntos suspensivos */
-}
-/* Ancho mínimo para columnas de fecha/hora */
-table th:nth-child(5), table td:nth-child(5), /* Creación */
-table th:nth-child(6), table td:nth-child(6), /* Expiración */
-table th:nth-child(8), table td:nth-child(8) /* Aprobación */
-{
-    min-width: 120px; /* Ajusta si es necesario */
-}
-.no-results { text-align: center; color: #888; margin-top: 20px; }
-
-/* Filas Expandibles (listqr.php) (Unificado) */
-.invitation-summary-row {
-    cursor: pointer;
-    border-bottom: 1px solid #ddd;
-}
-.invitation-summary-row:hover {
-    background-color: #f0f0f0;
-}
-.invitation-details-row {
-    display: none; /* Ocultar por defecto */
-}
-.invitation-details-row td { /* Remueve el padding del td contenedor */
-    padding: 0;
-}
-.invitation-details-expanded { /* Contenido expandido dentro de la fila de detalles */
-    padding: 15px;
-    background-color: #f9f9f9;
-    border-top: 1px solid #ddd;
-    text-align: left;
-}
-.invitation-details-expanded .detail-item { /* Cada par etiqueta/valor */
-    margin-bottom: 8px;
-    line-height: 1.4;
-}
-.invitation-details-expanded .detail-item .detail-label { /* Etiqueta (Código:, Invitado:, etc.) */
-    font-weight: bold;
-    display: inline-block;
-    width: 120px; /* Ajusta para alinear etiquetas */
-    margin-right: 10px;
-    text-align: right;
-}
-.invitation-details-expanded .detail-item .detail-value { /* Valor del detalle */
-    display: inline-block;
-}
-.button-group-expanded { /* Contenedor de botones dentro de detalles expandidos */
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px solid #eee;
-    display: flex;
-    justify-content: center; /* Centra los botones */
-    gap: 10px; /* Espacio entre botones */
-    flex-wrap: wrap; /* Permite que los botones salten de línea */
-}
-/* Ajustar márgenes de botones si se usa 'gap' en el flex container */
-.button-group-expanded .btn {
-    margin: 0;
-    /* Si necesitas que los botones se estiren en móvil */
-    /* width: 100%; */
-}
-
-
-/* Visualización de Código QR (Usado en listado o show page) */
-.qr-code-display {
-     margin-top: 10px;
-     text-align: center;
-}
-.qr-code-display img {
-     max-width: 150px;
-     height: auto;
-}
-
-
-/* Escáner (scanqr.php) */
-#scanner-container {
-    position: relative;
-    width: 100%;
-    padding-bottom: 100%;
-    margin: 0 auto 20px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-    overflow: hidden;
-    /* max-width: 400px; /* Opcional: Limita el ancho del contenedor del escáner */
-}
-#scanner { /* El elemento video */
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* Cubre el área manteniendo proporción */
-    display: block;
-}
-.status-message { /* Mensaje de estado en el escáner */
-    text-align: center;
-    font-size: 1.2em;
-    margin-bottom: 20px;
-    padding: 10px 20px;
-    border-radius: 4px;
-    box-sizing: border-box;
-    display: block;
-    margin-left: auto; /* Centra si es necesario */
-    margin-right: auto; /* Centra si es necesario */
-    /* Usar las clases de fondo de estado definidas abajo */
-}
-.invitation-details { /* Sección de detalles en el escáner */
-    margin-top: 20px;
-    border-top: 1px solid #eee;
-    padding: 15px 20px; /* Padding consistente con .container */
-    box-sizing: border-box;
-    display: none; /* Oculto por defecto */
-}
-.invitation-details p { margin: 5px 0; } /* Margen consistente */
-
-#approve-btn { /* Botón de aprobación (puede usar .btn) */
-    display: none; /* Oculto por defecto */
-    background-color: #28a745; /* Verde */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    margin-top: 20px;
-    padding: 10px 20px; /* Padding consistente */
-    box-sizing: border-box;
-    display: block; /* Comportamiento de bloque */
-    margin-left: auto; /* Centra si es necesario */
-    margin-right: auto; /* Centra si es necesario */
-}
-#approve-btn:hover { background-color: #218838; }
-#approve-btn:disabled { background-color: #ccc; cursor: not-allowed; }
-
-
-/* --- 6. Estilos de Estado (Colores y Fondos - Unificado) --- */
-
-/* Colores de Texto de Estado (para texto dentro de tabla o detalles) */
-.status-pendiente { color: orange; font-weight: bold; }
-.status-aprobado { color: green; font-weight: bold; }
-.status-expirado { color: gray; }
-.status-cancelado { color: red; }
-.status-desconocido { color: #888; } /* Estado por defecto 'N/A' o desconocido */
-
-
-/* Clases de Fondo y Borde de Estado (para mensajes o badges) */
-/* Puedes aplicar estas clases a .status-message o a otros elementos */
-.status-valid-bg { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-.status-expired-bg { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-.status-approved-bg { background-color: #ffeeba; color: #856404; border: 1px solid #ffecb5; } /* Cambiado a amarillo, 'approved' vs 'valid' puede ser diferente */
-.status-error-bg { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; } /* Mismo que expired/danger */
-.status-info-bg { background-color: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
-
-/* --- 7. Modal de Visualización del QR --- */
-
-/* El Overlay (Fondo Oscuro) */
-#qrModalOverlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    /* display: none; se controla con JS */
-}
-
-/* El Contenido del Modal (la caja que contiene la imagen) */
-#qrModalContent {
-    background-color: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-    max-width: 90%;
-    max-height: 90%;
-    overflow: auto;
-    text-align: center;
-}
-
-/* La Imagen del QR dentro del Modal */
-#qrModalImage {
-    max-width: 100%;
-    max-height: 80vh; /* Limita la altura máxima al 80% de la altura del viewport */
-    height: auto; /* Mantiene la proporción */
-    display: block; /* Elimina espacio extra bajo la imagen */
-    margin: 0 auto; /* Centra la imagen si es más pequeña que el contenedor */
-}
-
-
-.login-container { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); }
-.form-group { margin-bottom: 15px; }
-label { display: block; margin-bottom: 5px; font-weight: bold; }
-input[type="text"], input[type="password"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-button { width: 100%; padding: 10px; background-color: #5cb85c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
-button:hover { background-color: #4cae4c; }
-.error { color: red; text-align: center; margin-bottom: 15px; }
-
-/* --- 8. Media Queries (Ajustes Responsivos) --- */
-main { font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f4f4f4; }
-
-/* En pantallas más estrechas que 767px */
-@media (max-width: 767px) {
+          font-family: sans-serif;
+          line-height: 1.6;
+          margin: 0;
+          background-color: #f4f4f4;
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+    }
+    
+    /* El contenedor general, usado en otras páginas (Combinado) */
+    .container {
+          max-width: 600px; /* Valor del segundo bloque */
+          margin: 20px auto;
+          background-color: #fff;
+          padding: 20px;
+          border-radius: 8px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+          width: 95%; /* Propiedad solo en el primer bloque */
+          box-sizing: border-box; /* Propiedad solo en el primer bloque */
+          flex-shrink: 0; /* Propiedad solo en el primer bloque */
+    }
+    
+    /* --- 2. Layout / Estructura Principal --- */
+    
+    .header {
+          background-color: #007bff;
+          color: white;
+          padding: 10px 20px;
+          text-align: center;
+          flex-shrink: 0;
+    }
+    
+    .footer {
+          width: 100%;
+          background-color: #ccc;
+          color: #333;
+          text-align: center;
+          padding: 15px 20px;
+          flex-shrink: 0;
+          margin-top: auto; /* Empuja el footer al fondo */
+    }
+    
+    /* Estilo para el botón salir fijo (usado en todas las páginas) */
+    .logout-btn {
+          position: fixed;
+          top: 15px;
+          right: 15px;
+          padding: 5px 10px;
+          background-color: #f0ad4e;
+          color: white !important; /* Asegura que el color sea blanco */
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          z-index: 1000;
+          text-decoration: none; /* Enlaces no subrayados */
+          display: inline-block; /* Para que se comporte como botón */
+    }
+    .logout-btn:hover { background-color: #ec9d00; }
+    
+    /* Estilo para el botón Atrás fijo */
+    .back-btn {
+          position: fixed;
+          top: 15px;
+          left: 15px;
+          padding: 5px 10px;
+          background-color: #6c757d;
+          color: white !important; /* Asegura que el color sea blanco */
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          z-index: 1000;
+          text-decoration: none; /* Enlaces no subrayados */
+          display: inline-block; /* Para que se comporte como botón */
+    }
+    .back-btn:hover { background-color: #5a6268; }
+    
+    
+    /* --- 3. Tipografía --- */
+    h2 { /* Combinado */
+          text-align: center;
+          margin-bottom: 20px;
+          font-size: 1.5em; /* Puedes ajustar este valor base */
+    }
+    
+    /* Título dentro del header, si necesita un tamaño o margen diferente */
+    .header h2 {
+          margin: 0; /* Anula el margen del h2 general si está en el header */
+          /* font-size: 1.8em; /* Opcional: un tamaño diferente para el título del header */
+    }
+    
+    h3 { /* Estilo h3 genérico o específico para news-section */
+          margin-top: 0;
+          margin-bottom: 10px;
+          color: #333;
+    }
+    
+    /* --- 4. Elementos de Formulario --- */
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    
+    /* Campos de input y select (Combinado) */
+    input[type="text"], input[type="date"], input[type="time"], select {
+          width: 100%; /* Usar 100% con box-sizing: border-box */
+          padding: 10px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          box-sizing: border-box; /* Incluir padding y borde en el ancho total */
+    }
+    
+    /* Botones Generales (Usando la clase .btn o el selector button) */
+    /* Es mejor usar una clase base como .btn y aplicarla a todos los botones/enlaces que deban tener ese estilo */
+    .btn, button { /* Aplica estilos base tanto al tag button como a la clase .btn */
+          display: inline-block; /* Necesario para padding/margin en <a> */
+          padding: 10px 15px;
+          background-color: #5cb85c; /* Verde por defecto */
+          color: white !important; /* !important puede ser necesario para enlaces */
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 16px;
+          text-decoration: none; /* Quita subrayado en enlaces */
+          text-align: center; /* Centra texto en botones */
+          transition: background-color 0.3s ease;
+          /* Resetea estilos por defecto específicos del navegador para <button> */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            margin-top: 10px; /* Espacio arriba de los botones por defecto */
+    }
+    
+    .btn:hover, button:hover {
+          background-color: #4cae4c; /* Verde oscuro al pasar el ratón */
+    }
+    
+    /* Estilos específicos de botón (Anulan el .btn base) */
+    .copy-link-btn {
+          background-color: #28a745; /* Verde Bootstrap */
+          border-color: #28a745;
+    }
+    .copy-link-btn:hover {
+            background-color: #218838;
+            border-color: #1e7e34;
+    }
+    
+    .delete-invite-btn {
+          background-color: #dc3545; /* Rojo (danger) */
+          border-color: #dc3545;
+    }
+    .delete-invite-btn:hover {
+            background-color: #c82333;
+            border-color: #bd2130;
+    }
+    
+    /* Si necesitas otros tipos de botones (ej: primario, secundario), define más clases */
+    /* .btn-primary { background-color: #007bff; border-color: #007bff; } */
+    /* .btn-primary:hover { background-color: #0056b3; border-color: #004085; } */
+    /* etc. */
+                /* Estilos para el contenedor del logo */
+                .logo-container {
+                      text-align: center; /* Centra la imagen si es más pequeña que el div */
+                      margin-bottom: 20px; /* Espacio entre el logo y el h2 */
+                      width: 100%; /* Ocupa todo el ancho del contenedor padre para centrar */
+                }
+                /* Estilos para la imagen del logo */
+                .logo-container img {
+                      max-width: 150px; /* Tamaño máximo del logo (ajusta según necesidad) */
+                      height: auto; /* Mantiene la proporción */
+                      display: block; /* Elimina espacio extra debajo de la imagen */
+                      margin: 0 auto; /* Centra la imagen dentro del logo-container */
+                }
+    
+                /* Media Query para ajustar en pantallas más pequeñas si es necesario */
+                @media (max-width: 400px) {
+                      .login-container {
+                            padding: 20px; /* Reduce padding en pantallas muy pequeñas */
+                      }
+                        .logo-container img {
+                              max-width: 120px; /* Reduce el tamaño del logo en pantallas muy pequeñas */
+                        }
+                }
+    
+    
+    /* --- 5. Componentes Específicos --- */
+    
+    /* Landing Page (index.php) */
+    .landing-image-container {
+          width: 100%;
+          height: 250px;
+          overflow: hidden;
+          position: relative;
+          background-color: #ccc;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          flex-shrink: 0;
+    }
+    .landing-image-container img {
+          display: block;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center;
+          position: absolute;
+          top: 0;
+          left: 0;
+          z-index: 1;
+    }
+    .main-title { /* Título principal sobre la imagen */
+          position: absolute;
+          bottom: 0;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 2;
+          font-size: 2em;
+          font-weight: bold;
+          color: white;
+          text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.6);
+          text-align: center;
+          padding: 10px;
+          width: 100%;
+          box-sizing: border-box;
+    }
+    .news-section {
+          text-align: center;
+          margin: 10px auto;
+          max-width: 800px;
+          padding: 20px;
+          background-color: #fff;
+          border-radius: 8px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+          width: 95%;
+          box-sizing: border-box;
+          flex-shrink: 0;
+    }
+    .news-section h3 { margin-top: 0; margin-bottom: 10px; color: #333; }
+    .news-section p { color: #555; white-space: pre-wrap; }
+    
+    
+    /* Grid de Botones de Navegación (index.php) */
     .button-grid {
-        grid-template-columns: repeat(2, 1fr); /* 2 columnas */
-        gap: 8px;
-        padding: 0 8px;
+          display: grid;
+          grid-template-columns: repeat(3, 1fr); /* 3 columnas por defecto */
+          gap: 10px;
+          margin-top: 10px;
+          margin-bottom: 20px;
+          padding: 0 10px;
+          max-width: 900px;
+          margin-left: auto;
+          margin-right: auto;
+          flex-grow: 1;
+          width: 100%;
+          box-sizing: border-box;
     }
-
-    /* Ocultar columnas específicas en la tabla en móviles */
-    /* Asegúrate que los nth-child coincidan con tu HTML */
-    table th:nth-child(2), table td:nth-child(2), /* Anfitrión */
-    table th:nth-child(4), table td:nth-child(4), /* Creación */
-    table th:nth-child(5), table td:nth-child(5), /* Expiración */
-    table th:nth-child(7), table td:nth-child(7), /* Aprobación */
-    table th:nth-child(8), table td:nth-child(8) /* Código */
-     {
-         display: none;
-     }
-
-     table th:nth-child(6), table td:nth-child(6) { /* Columna Lote */
-         /* Puedes ajustar su ancho si es necesario en móvil */
-         min-width: auto; /* Elimina el min-width fijo */
-     }
-
-
-    /* Ajustes opcionales para la tabla en móvil */
-    table td { /* Ajusta el padding en las celdas visibles */
-       padding: 8px 5px;
-       white-space: normal; /* Permite saltos de línea en celdas visibles */
+    .grid-button { /* Botón individual en la grid */
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-decoration: none;
+          color: #333;
+          border: 1px solid #ccc;
+          border-radius: 8px;
+          padding: 15px 10px;
+          text-align: center;
+          transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+          background-color: #fff;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
-
-    /* Ajusta el padding en el contenido de los detalles expandidos */
-    .invitation-details-expanded {
-       padding: 10px;
+    .grid-button:hover {
+          background-color: #e9e9e9;
+          border-color: #bbb;
+          box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
     }
-
-    /* Ajusta el ancho de la etiqueta en los detalles expandidos si es necesario en móvil */
-    .invitation-details-expanded .detail-item .detail-label {
-        width: 100px; /* Un poco más estrecho */
-        text-align: left; /* Alinear a la izquierda si no hay espacio para alinear a la derecha */
+    .grid-button img { /* Ícono en el botón grid */
+          width: 40px;
+          height: 40px;
+          margin-bottom: 10px;
     }
-     .invitation-details-expanded .detail-item .detail-value {
-         display: block; /* Fuerza el valor a una nueva línea */
-     }
-
-    /* Ajusta el grupo de botones si necesitas que se apilen o cambien el gap */
-     .button-group-expanded {
-         gap: 5px;
-         /* flex-direction: column; */ /* Opcional: apila los botones en columnas */
-         /* align-items: stretch; */ /* Opcional: estira los botones apilados */
-     }
-     /* .button-group-expanded .btn { width: 100%; } */ /* Opcional: botones apilados ocupan todo el ancho */
-
-}
-
-
-/* En pantallas más estrechas que 480px (intentando forzar 3 columnas en grid) */
-@media (max-width: 480px) {
-    .button-grid {
-        grid-template-columns: repeat(3, 1fr); /* Mantiene 3 columnas */
-        gap: 5px; /* Reduce espacio */
-        padding: 0 5px;
+    .grid-button span { /* Texto en el botón grid */
+          font-size: 1em;
+          font-weight: bold;
     }
-    .grid-button { /* Ajustes de tamaño en botones grid */
-         padding: 10px 5px;
+    
+    
+    /* Formulario de Invitación (invitar.php) */
+    .anfitrion-info { /* Información del anfitrión */
+          text-align: center;
+          margin-bottom: 20px;
     }
-    .grid-button img { /* Ícono más pequeño */
-        width: 30px;
-        height: 30px;
-        margin-bottom: 5px;
+    .qr-section { /* Sección del código QR */
+          text-align: center;
+          margin-top: 20px;
     }
-    .grid-button span { /* Texto más pequeño */
-         font-size: 0.75em;
+    #qrcode { /* Contenedor del QR generado */
+          margin: 10px auto;
+          padding: 10px;
+          background-color: #fff;
+          display: inline-block;
     }
-}
-
-/* Media query para ajustar tamaño de imagen modal si la altura es limitada */
-@media (max-height: 600px) { /* Puedes ajustar este valor */
+    
+    /* Listado de Invitaciones (listqr.php) */
+    .filter-form { /* Formulario de filtro */
+          margin-bottom: 20px;
+          padding: 15px;
+          background-color: #f9f9f9;
+          border-radius: 5px;
+    }
+    .filter-form label { margin-right: 10px; font-weight: bold; }
+    .filter-form select, .filter-form input[type="text"] { /* Campos del filtro */
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 10px;
+            /* Ajustar ancho si es necesario, o usar flexbox en el contenedor */
+    }
+    .filter-form button { /* Botón del filtro - puede usar .btn */
+            padding: 8px 15px;
+            background-color: #007bff; /* Azul */
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+    }
+    .filter-form button:hover { background-color: #0056b3; }
+    
+    
+    /* Tabla de Invitaciones (listqr.php) */
+    table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 20px;
+    }
+    table th, table td {
+          padding: 10px;
+          text-align: left;
+          border-bottom: 1px solid #ddd;
+          white-space: nowrap; /* Evita salto de línea */
+          overflow: hidden;
+          text-overflow: ellipsis; /* Añade puntos suspensivos */
+    }
+    /* Ancho mínimo para columnas de fecha/hora */
+    table th:nth-child(5), table td:nth-child(5), /* Creación */
+    table th:nth-child(6), table td:nth-child(6), /* Expiración */
+    table th:nth-child(8), table td:nth-child(8) /* Aprobación */
+    {
+          min-width: 120px; /* Ajusta si es necesario */
+    }
+    .no-results { text-align: center; color: #888; margin-top: 20px; }
+    
+    /* Filas Expandibles (listqr.php) (Unificado) */
+    .invitation-summary-row {
+          cursor: pointer;
+          border-bottom: 1px solid #ddd;
+    }
+    .invitation-summary-row:hover {
+          background-color: #f0f0f0;
+    }
+    .invitation-details-row {
+          display: none; /* Ocultar por defecto */
+    }
+    .invitation-details-row td { /* Remueve el padding del td contenedor */
+          padding: 0;
+    }
+    .invitation-details-expanded { /* Contenido expandido dentro de la fila de detalles */
+          padding: 15px;
+          background-color: #f9f9f9;
+          border-top: 1px solid #ddd;
+          text-align: left;
+    }
+    .invitation-details-expanded .detail-item { /* Cada par etiqueta/valor */
+          margin-bottom: 8px;
+          line-height: 1.4;
+    }
+    .invitation-details-expanded .detail-item .detail-label { /* Etiqueta (Código:, Invitado:, etc.) */
+          font-weight: bold;
+          display: inline-block;
+          width: 120px; /* Ajusta para alinear etiquetas */
+          margin-right: 10px;
+          text-align: right;
+    }
+    .invitation-details-expanded .detail-item .detail-value { /* Valor del detalle */
+          display: inline-block;
+    }
+    .button-group-expanded { /* Contenedor de botones dentro de detalles expandidos */
+          margin-top: 20px;
+          padding-top: 15px;
+          border-top: 1px solid #eee;
+          display: flex;
+          justify-content: center; /* Centra los botones */
+          gap: 10px; /* Espacio entre botones */
+          flex-wrap: wrap; /* Permite que los botones salten de línea */
+    }
+    /* Ajustar márgenes de botones si se usa 'gap' en el flex container */
+    .button-group-expanded .btn {
+          margin: 0;
+        /* Añadido: Permite que los botones se encogan y crezcan para autoajustarse */
+        flex-grow: 1;
+        flex-shrink: 1;
+        flex-basis: 0; /* Permite que el cálculo inicial de tamaño sea 0, distribuyendo el espacio disponible */
+        min-width: 0; /* Asegura que no tengan un ancho mínimo que impida encogerse */
+          /* Si necesitas que los botones se estiren en móvil */
+          /* width: 100%; */
+    }
+    
+    
+    /* Visualización de Código QR (Usado en listado o show page) */
+    .qr-code-display {
+            margin-top: 10px;
+            text-align: center;
+    }
+    .qr-code-display img {
+            max-width: 150px;
+            height: auto;
+    }
+    
+    
+    /* Escáner (scanqr.php) */
+    /* Nota: Estos estilos para el escáner ya deberían estar en scanqr_styles.css */
+    /* Si los tienes duplicados, es mejor eliminarlos de styles.css */
+    /*
+    #scanner-container {
+          position: relative;
+          width: 100%;
+          padding-bottom: 100%;
+          margin: 0 auto 20px;
+          border: 1px solid #ccc;
+          box-sizing: border-box;
+          overflow: hidden;
+          /* max-width: 400px; /* Opcional: Limita el ancho del contenedor del escáner */
+    /* }
+    #scanner { /* El elemento video */
+    /*       position: absolute;
+    /*       top: 0;
+    /*       left: 0;
+    /*       width: 100%;
+    /*       height: 100%;
+    /*       object-fit: cover; /* Cubre el área manteniendo proporción */
+    /*       display: block;
+    /* }
+    /* .status-message { /* Mensaje de estado en el escáner */
+    /*       text-align: center;
+    /*       font-size: 1.2em;
+    /*       margin-bottom: 20px;
+    /*       padding: 10px 20px;
+    /*       border-radius: 4px;
+    /*       box-sizing: border-box;
+    /*       display: block;
+    /*       margin-left: auto; /* Centra si es necesario */
+    /*       margin-right: auto; /* Centra si es necesario */
+    /*       /* Usar las clases de fondo de estado definidas abajo */
+    /* }
+    /* .invitation-details { /* Sección de detalles en el escáner */
+    /*       margin-top: 20px;
+    /*       border-top: 1px solid #eee;
+    /*       padding: 15px 20px; /* Padding consistente con .container */
+    /*       box-sizing: border-box;
+    /*       display: none; /* Oculto por defecto */
+    /* }
+    /* .invitation-details p { margin: 5px 0; } /* Margen consistente */
+    
+    /* #approve-btn { /* Botón de aprobación (puede usar .btn) */
+    /*       display: none; /* Oculto por defecto */
+    /*       background-color: #28a745; /* Verde */
+    /*       color: white;
+    /*       border: none;
+    /*       border-radius: 4px;
+    /*       cursor: pointer;
+    /*       font-size: 16px;
+    /*       margin-top: 20px;
+    /*       padding: 10px 20px; /* Padding consistente */
+    /*       box-sizing: border-box;
+    /*       display: block; /* Comportamiento de bloque */
+    /*       margin-left: auto; /* Centra si es necesario */
+    /*       margin-right: auto; /* Centra si es necesario */
+    /* }
+    /* #approve-btn:hover { background-color: #218838; }
+    /* #approve-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+    */
+    
+    
+    /* --- 6. Estilos de Estado (Colores y Fondos - Unificado) --- */
+    
+    /* Colores de Texto de Estado (para texto dentro de tabla o detalles) */
+    .status-pendiente { color: orange; font-weight: bold; }
+    .status-aprobado { color: green; font-weight: bold; }
+    .status-expirado { color: gray; }
+    .status-cancelado { color: red; }
+    .status-desconocido { color: #888; } /* Estado por defecto 'N/A' o desconocido */
+    
+    
+    /* Clases de Fondo y Borde de Estado (para mensajes o badges) */
+    /* Puedes aplicar estas clases a .status-message o a otros elementos */
+    .status-valid-bg { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .status-expired-bg { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .status-approved-bg { background-color: #ffeeba; color: #856404; border: 1px solid #ffecb5; } /* Cambiado a amarillo, 'approved' vs 'valid' puede ser diferente */
+    .status-error-bg { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; } /* Mismo que expired/danger */
+    .status-info-bg { background-color: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+    
+    /* --- 7. Modal de Visualización del QR --- */
+    
+    /* El Overlay (Fondo Oscuro) */
+    #qrModalOverlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.7);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
+          /* display: none; se controla con JS */
+    }
+    
+    /* El Contenido del Modal (la caja que contiene la imagen) */
+    #qrModalContent {
+          background-color: white;
+          padding: 20px;
+          border-radius: 8px;
+          box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+          max-width: 90%;
+          max-height: 90%;
+          overflow: auto;
+          text-align: center;
+    }
+    
+    /* La Imagen del QR dentro del Modal */
     #qrModalImage {
-        max-height: 70vh; /* Reduce la altura máxima del QR en pantallas más cortas */
+          max-width: 100%;
+          max-height: 80vh; /* Limita la altura máxima al 80% de la altura del viewport */
+          height: auto; /* Mantiene la proporción */
+          display: block; /* Elimina espacio extra bajo la imagen */
+          margin: 0 auto; /* Centra la imagen si es más pequeña que el contenedor */
     }
-}
+    
+    
+    .login-container { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    input[type="text"], input[type="password"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+    button { width: 100%; padding: 10px; background-color: #5cb85c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+    button:hover { background-color: #4cae4c; }
+    .error { color: red; text-align: center; margin-bottom: 15px; }
+    
+    /* --- 8. Media Queries (Ajustes Responsivos) --- */
+    main { font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f4f4f4; }
+    
+    /* En pantallas más estrechas que 767px */
+    @media (max-width: 767px) {
+          .button-grid {
+                grid-template-columns: repeat(2, 1fr); /* 2 columnas */
+                gap: 8px;
+                padding: 0 8px;
+          }
+    
+          /* Ocultar columnas específicas en la tabla en móviles */
+          /* Asegúrate que los nth-child coincidan con tu HTML */
+          table th:nth-child(2), table td:nth-child(2), /* Anfitrión */
+          table th:nth-child(4), table td:nth-child(4), /* Creación */
+          table th:nth-child(5), table td:nth-child(5), /* Expiración */
+          table th:nth-child(7), table td:nth-child(7), /* Aprobación */
+          table th:nth-child(8), table td:nth-child(8) /* Código */
+            {
+                  display: none;
+            }
+    
+            table th:nth-child(6), table td:nth-child(6) { /* Columna Lote */
+                  /* Puedes ajustar su ancho si es necesario en móvil */
+                  min-width: auto; /* Elimina el min-width fijo */
+            }
+    
+    
+          /* Ajustes opcionales para la tabla en móvil */
+          table td { /* Ajusta el padding en las celdas visibles */
+               padding: 8px 5px;
+               white-space: normal; /* Permite saltos de línea en celdas visibles */
+          }
+    
+          /* Ajusta el padding en el contenido de los detalles expandidos */
+          .invitation-details-expanded {
+               padding: 10px;
+          }
+    
+          /* Ajusta el ancho de la etiqueta en los detalles expandidos si es necesario en móvil */
+          .invitation-details-expanded .detail-item .detail-label {
+                width: 100px; /* Un poco más estrecho */
+                text-align: left; /* Alinear a la izquierda si no hay espacio para alinear a la derecha */
+          }
+            .invitation-details-expanded .detail-item .detail-value {
+                  display: block; /* Fuerza el valor a una nueva línea */
+            }
+    
+          /* Ajusta el grupo de botones si necesitas que se apilen o cambien el gap */
+            .button-group-expanded {
+                  gap: 5px;
+                  /* flex-direction: column; */ /* Opcional: apila los botones en columnas */
+                  /* align-items: stretch; */ /* Opcional: estira los botones apilados */
+            }
+            /* .button-group-expanded .btn { width: 100%; } */ /* Opcional: botones apilados ocupan todo el ancho */
+    
+    }
+    
+    
+    /* En pantallas más estrechas que 480px (intentando forzar 3 columnas en grid) */
+    @media (max-width: 480px) {
+          .button-grid {
+                grid-template-columns: repeat(3, 1fr); /* Mantiene 3 columnas */
+                gap: 5px; /* Reduce espacio */
+                padding: 0 5px;
+          }
+          .grid-button { /* Ajustes de tamaño en botones grid */
+                  padding: 10px 5px;
+          }
+          .grid-button img { /* Ícono más pequeño */
+                width: 30px;
+                height: 30px;
+                margin-bottom: 5px;
+          }
+          .grid-button span { /* Texto más pequeño */
+                  font-size: 0.75em;
+          }
+    }
+    
+    /* Media query para ajustar tamaño de imagen modal si la altura es limitada */
+    @media (max-height: 600px) { /* Puedes ajustar este valor */
+          #qrModalImage {
+                max-height: 70vh; /* Reduce la altura máxima del QR en pantallas más cortas */
+          }
+    }
+    

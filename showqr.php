@@ -93,7 +93,7 @@ $logo_url = '../assets/logo.png'; // >>> ASEGÚRATE QUE ESTA RUTA ES CORRECTA PA
             font-family: sans-serif;
             line-height: 1.6;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             background-color: #f4f4f4; /* Un fondo suave */
             color: #333;
             display: flex; /* Usamos flexbox para centrar el contenido principal */
@@ -103,7 +103,7 @@ $logo_url = '../assets/logo.png'; // >>> ASEGÚRATE QUE ESTA RUTA ES CORRECTA PA
         }
         .invitation-container {
             background-color: #fff; /* Fondo blanco para el contenido de la invitación */
-            padding: 30px;
+            padding: 10px;
             border-radius: 8px; /* Bordes redondeados */
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.1); /* Sombra suave */
             text-align: center; /* Centra el texto y elementos en línea */
@@ -112,14 +112,14 @@ $logo_url = '../assets/logo.png'; // >>> ASEGÚRATE QUE ESTA RUTA ES CORRECTA PA
             box-sizing: border-box; /* Incluye padding y borde en el ancho total */
         }
         .header-logo {
-            margin-bottom: 20px; /* Espacio debajo del logo */
+            margin-bottom: 10px; /* Espacio debajo del logo */
         }
         .header-logo img {
             max-width: 150px; /* Ajusta el tamaño máximo del logo */
             height: auto; /* Mantiene la proporción */
         }
         .invitation-details {
-            margin-bottom: 20px; /* Espacio debajo de los detalles */
+            margin-bottom: 10px; /* Espacio debajo de los detalles */
         }
         .invitation-details p {
             margin: 10px 0; /* Espacio entre líneas de detalles */
@@ -137,14 +137,14 @@ $logo_url = '../assets/logo.png'; // >>> ASEGÚRATE QUE ESTA RUTA ES CORRECTA PA
              flex-shrink: 0; /* Evita que la etiqueta se encoja */
          }
         .qr-code-display {
-            margin: 20px auto; /* Margen y centrado automático */
+            margin: 10px auto; /* Margen y centrado automático */
             padding: 10px; /* Espacio alrededor del QR */
             border: 1px solid #ddd; /* Borde alrededor del QR */
             display: inline-block; /* Para que el borde se ajuste al contenido */
             background-color: #fff; /* Fondo blanco dentro del borde */
         }
         .qr-code-display img {
-            max-width: 250px; /* Ancho máximo para la imagen del QR */
+            max-width: 350px; /* Ancho máximo para la imagen del QR */
             height: auto; /* Mantiene la proporción */
             display: block; /* Elimina el espacio extra debajo de la imagen */
         }
@@ -160,7 +160,7 @@ $logo_url = '../assets/logo.png'; // >>> ASEGÚRATE QUE ESTA RUTA ES CORRECTA PA
         /* Estilos Responsive (Opcional, mejora la adaptación a móviles) */
         @media (max-width: 400px) {
             .invitation-container {
-                padding: 20px;
+                padding: 10px;
             }
             .invitation-details p {
                 flex-direction: column; /* Apila etiqueta y valor en pantallas muy pequeñas */
@@ -173,7 +173,7 @@ $logo_url = '../assets/logo.png'; // >>> ASEGÚRATE QUE ESTA RUTA ES CORRECTA PA
                 margin-bottom: 5px; /* Añade espacio debajo de la etiqueta */
             }
              .qr-code-display img {
-                 max-width: 180px; /* Reduce un poco el tamaño del QR en pantallas muy pequeñas */
+                 max-width: 200px; /* Reduce un poco el tamaño del QR en pantallas muy pequeñas */
              }
         }
 
@@ -189,15 +189,7 @@ $logo_url = '../assets/logo.png'; // >>> ASEGÚRATE QUE ESTA RUTA ES CORRECTA PA
         <?php if ($error_message): ?>
             <div class="status-message status-invalid"><?php echo htmlspecialchars($error_message); ?></div>
         <?php elseif ($invitation): ?>
-            <h2>Invitación</h2>
-            <div class="invitation-details">
-                <p><strong>Invitado:</strong> <?php echo htmlspecialchars($guest_name); ?></p>
-                <p><strong>Anfitrión:</strong> <?php echo htmlspecialchars($anfitrion_name); ?></p>
-                <p><strong>Lote:</strong> <?php echo htmlspecialchars($anfitrion_lote); ?></p>
-                <p><strong>Expira:</strong> <?php echo htmlspecialchars($fecha_expiracion_formatted); ?></p>
-                <p><strong>Estado:</strong> <span class="status-<?php echo htmlspecialchars(strtolower($invitation_status)); ?>"><?php echo htmlspecialchars(ucfirst($invitation_status)); ?></span></p>
-            </div>
-
+            <h2>Código de Acceso</h2>          
             <div class="qr-code-display">
                 <?php
                 // === Verifica si la invitación se encontró y si la URL del QR ($qr_image_url) está construida ===
@@ -235,13 +227,8 @@ $logo_url = '../assets/logo.png'; // >>> ASEGÚRATE QUE ESTA RUTA ES CORRECTA PA
                     <p style="font-size: 0.9em;">Posibles causas: El enlace es incorrecto, la invitación no existe, o el archivo QR no se guardó correctamente en la carpeta "qr" del servidor.</p>
                 <?php endif; ?>
             </div>
-
-            <p style="margin-top: 20px; font-size: 0.9em; color: #555;">Presenta este código QR al personal de seguridad para validar tu entrada.</p>
-
+            <p style="margin-top: 10px; font-size: 0.9em; color: #555;">Presenta este QR a seguridad para validar tu acceso.</p>
         <?php endif; // Fin de la condición para mostrar error o detalles de invitación ?>
-
-        <p style="margin-top: 30px;"><a href="../index.php">Volver a Inicio</a></p>
-
     </div>
 </body>
 </html>

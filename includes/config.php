@@ -1,45 +1,30 @@
 <?php
-// config.php
+// htdocs/includes/config.php - Archivo de Configuración Global
 
-$main_title = "Accesos";
-$main_name = "Pampa Pilar";
+// --- === Configuración General === ---
+$is_local = in_array($_SERVER['HTTP_HOST'], ['localhost', '127.0.0.1']) ||
+            in_array($_SERVER['SERVER_NAME'], ['localhost', '127.0.0.1']);
+if ($is_local) {
+    define('URL_BASE', 'http://localhost/xbarrioalpha'); 
+} else {
 
+    define('URL_BASE', 'http://pampa.prodigma.com'); 
+}
 
-define('URL_BASE', 'http://pampa.prodigma.com'); // Reemplaza 'TU_URL_BASE_AQUI' con la URL real de tu sitio (ej: 'http://localhost/_aalocal/xsecalpha')
-
-
-// Define the directory to store invitation files
-// !!! IMPORTANT: This path must be OUTSIDE your web server's document root (htdocs) for security !!!
-// Adjust this path based on your server's file structure.
-define('INVITATIONS_DIR', __DIR__ . '/../visitas/'); // Example: two levels up from 'includes'
-
-
-// Directorio donde se guardan los archivos de invitación (.sl)
-// Base URL para la página de seguridad (usada para generar el QR/enlace)
-// Asegúrate de que 'xsecalpha' sea el nombre correcto de tu carpeta
-//define('BASE_SECURITY_URL', 'http://' . $_SERVER['HTTP_HOST'] . '/xsecalpha/seguridad/'); // Ajusta la ruta si es necesario
-// Base URL for the security check page
-// !!! IMPORTANT: Replace with your actual domain and path !!!
-//define('BASE_SECURITY_URL', 'http://yourbarriodomain.com/seguridad/');
-define('BASE_SECURITY_URL', 'http://localhost/seguridad/');
-
-// User credentials (Anfitriones and Seguridad)
-// Passwords MUST be hashed using password_hash()
-// Use a tool or script to generate hashes for your desired passwords.
-// e.g., echo password_hash('your_anfitrion_password', PASSWORD_DEFAULT);
-// e.g., echo password_hash('your_seguridad_password', PASSWORD_DEFAULT);
-
-define('DYNAMIC_USERS_FILE', __DIR__ . '/../data/users.json'); // Renombramos el archivo JSON para mayor claridad
-
-define('DEBUG_MODE', false); // <<< Cámbialo a false cuando no necesites depurar >>>
-define('CUSTOM_DEBUG_LOG_FILE', __DIR__ . '/../custom_debug.log');
-
-$allowed_roles = ['anfitrion', 'seguridad', 'administrador', 'developer'];
-// Define qué roles tienen "acceso total" a listados (ven todas las invitaciones)
-// Roles no listados aquí (como 'anfitrion' normal) solo verán sus propias invitaciones en listados restringidos.
-$all_access_roles = ['seguridad', 'administrador', 'developer'];
+$devtelid = '-603449663'; //telegram dev
+$protelid = '-4672661371'; //telegram pampa
+$whatserver = 'http://149.50.129.89:3004';
 
 
+define('IS_LOCAL_ENV', $is_local);
+// --- === Configuración de Usuarios y Autenticación === ---
+// Ruta al archivo JSON donde se guardan los usuarios dinámicos (creados via alta.php).
+// __DIR__ es la carpeta actual (includes). '/../' sube un nivel (a htdocs). '/data/' entra en la carpeta data.
+define('DYNAMIC_USERS_FILE', __DIR__ . '/../data/users.json'); // <<< RUTA CORREGIDA
+
+// Lista de usuarios estáticos (ej: administradores iniciales, developers).
+// Estos usuarios NO se guardan en users.json. Su contraseña debe estar HASHEADA.
+// Usa password_hash('tu_contraseña', PASSWORD_DEFAULT) para generar el hash.
 $static_users = [
     [
         'id' => 'developer*', // Un ID único para este usuario estático
@@ -89,65 +74,43 @@ $static_users = [
     */
 ];
 
-/*
-$xusers = [
-    'developer' => [
-        'password' => '$2y$10$b/dzbcei6UMgTGzkIjr7ku8iKNYjFWK1AHYp5nookDCq3Lgx06sZS', // tester
-        'role' => 'developer',
-        'name' => 'Diego Sotile',
-        'lote' => '63',
-        'whatsapp' => '541164920364' // Include country code
-    ],
-    'anfitrion1' => [
-        'password' => '$2y$10$b/dzbcei6UMgTGzkIjr7ku8iKNYjFWK1AHYp5nookDCq3Lgx06sZS', // tester
-        'role' => 'anfitrion',
-        'name' => 'Juan Perez',
-        'lote' => '60',
-        'whatsapp' => '+5491112345678' // Include country code
-    ],
-    'anfitrion2' => [
-         'password' => '$2y$10$b/dzbcei6UMgTGzkIjr7ku8iKNYjFWK1AHYp5nookDCq3Lgx06sZS', // Replace with a real hash
-        'role' => 'anfitrion',
-        'name' => 'Maria Garcia',
-        'lote' => '15',
-        'whatsapp' => '+5491187654321'
-    ],
-    'seguridad1' => [
-        'password' => '$2y$10$rpUUXd658iUBJxiJ.YRS7uFQg/4R88F9qffpe3Gl8jd56wupieJaS', // vigilancia
-        'name' => 'Seguridad 1',
-        'role' => 'seguridad'
-    ],
-    'seguridad2' => [
-        'password' => '$2y$10$hashed_password_for_seguridad2...', // Replace with a real hash
-        'name' => 'Seguridad 2',
-        'role' => 'seguridad'
-    ]
-];
-*/
+// Lista maestra de roles válidos en la aplicación.
+// Usada para validación (ej: al crear/editar usuarios) y lógica de permisos.
+$valid_app_roles = ['anfitrion', 'seguridad', 'administrador', 'developer']; // <<< Define AQUÍ todos tus roles válidos
+
+// --- === Configuración de Invitaciones y QR === ---
+// Ruta al archivo JSON donde se guardan las invitaciones.
+$invitations_file = __DIR__ . '/../data/invitations.json'; // Ruta al archivo JSON de invitaciones
+
+// Directorio donde se guardarán las imágenes de los códigos QR generados.
+$qr_codes_dir = __DIR__ . '/../qr/'; // Directorio dentro de htdocs para los archivos QR
+
+$qr_default_validity_hours = 24; // 24 horas por defecto
 
 
-// Define los roles válidos en tu sistema (debe incluir todos los roles, estáticos y dinámicos)
-$allowed_roles = ['anfitrion', 'seguridad', 'administrador', 'developer'];
+// --- === Configuración de Permisos por Roles === ---
+// Define qué roles tienen acceso a qué funcionalidades o páginas.
+// Estos arrays se usan en los scripts PHP para verificar permisos.
 
-// Define qué roles tienen "acceso total" a listados (ven todas las invitaciones)
-$all_access_roles = ['seguridad', 'administrador', 'developer'];
+// Roles permitidos para acceder a la página de crear invitación (invitar.php)
+$invite_allowed_roles = ['anfitrion', 'administrador', 'developer'];
 
-// Opcional: Define qué roles tienen permiso para acceder a alta.php (gestionar usuarios dinámicos)
-$user_management_roles = ['administrador', 'developer'];
+// Roles permitidos para acceder a la página de listado de QRs (listqr.php)
+$list_allowed_roles = ['anfitrion', 'seguridad', 'administrador', 'developer'];
+
+// Roles permitidos para acceder a la página de escanear QR (scanqr.php)
+$scan_allowed_roles = ['seguridad', 'administrador', 'developer'];
+
+// Roles que tienen permiso global para eliminar invitaciones (además del propio anfitrión)
+$delete_allowed_roles_global = ['administrador', 'developer'];
 
 
-
-// Validity duration options for invitations (in seconds)
-$validity_options = [
-    '24h' => 24 * 3600,
-    '48h' => 48 * 3600,
-    '72h' => 72 * 3600,
-    'end_of_day' => 'end_of_day' // Special flag to calculate till 23:59:59 of selected date
-];
+// --- === Configuración de Debugging === ---
+define('DEBUG_MODE', true); // <<< Cambia a false para producción
+define('CUSTOM_DEBUG_LOG_FILE', __DIR__ . '/../logs/custom_debug.log');
 
 
 // --- Configuración del Landing Page (index.php) ---
-
 // Ruta a la imagen de fondo del contenedor superior
 $landing_image_url = 'assets/images/landing_background.jpg'; // Asegúrate que la ruta y nombre sean correctos
 
@@ -198,18 +161,26 @@ $landing_buttons = [
         'roles' => ['anfitrion', 'seguridad', 'administrador', 'developer'], // Descomentar y ajustar si quieres restringir
     ],
     [
-        'icon' => 'assets/icons/addusers.png',
-        'label' => 'Altas',
-        'link' => 'alta.php', // Enlace temporal
-        'roles' => ['administrador', 'developer'], // Descomentar y ajustar si quieres restringir
-    ],
-    [
         'icon' => 'assets/icons/settings.png',
         'label' => 'Config',
         'link' => '#', // Enlace temporal
         'roles' => ['anfitrion', 'seguridad', 'administrador', 'developer'], // Descomentar y ajustar si quieres restringir
     ],
 ];
+
+
+
+
+function sendTel($str, $telid)
+{
+    $ch = curl_init();     // create curl resource
+    $urli = 'https://api.telegram.org/bot1250866565:AAF4XC35GL5QHB9adje_uM-QEfkd4VQOZQE/sendMessage?chat_id=' . $telid . '&text=' .$_SERVER['SERVER_NAME'].' ' . $str;
+    curl_setopt($ch, CURLOPT_URL, $urli);     //return the transfer as a string
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);     // $output contains the output string
+    $output = curl_exec($ch);
+    curl_close($ch);     // close curl resource to free up system resources
+    //echo $output; //debug
+}
 
 
 ?>
